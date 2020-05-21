@@ -1,0 +1,38 @@
+version: 0.1.0.{build}
+
+configuration:
+- Release
+#- Debug
+
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu1804'
+      CMAKE_COMPILER_ARGS: '-D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++'
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu1804'
+      CMAKE_COMPILER_ARGS: '-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++'
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: 'Visual Studio 2019'
+
+install:
+  - sh: sudo apt -y install libncurses5-dev libgit2-dev
+
+before_build:
+  - git submodule update --init --recursive
+
+build_script:
+  - mkdir build
+  - cd build
+  - sh: cmake -D CMAKE_BUILD_TYPE=${CONFIGURATION} ${CMAKE_COMPILER_ARGS} ..
+  - sh: cmake --build .
+  - cmd: cmake ..
+  - cmd: cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - sh: ctest --verbose
+  - cmd: ctest --verbose --build-config %CONFIGURATION%
+
+after_test:
+  - cmd: 7z a reef-%APPVEYOR_BUILD_VERSION%-%CONFIGURATION%.zip %APPVEYOR_BUILD_FOLDER%\build\%CONFIGURATION%\*
+  - cmd: appveyor PushArtifact reef-%APPVEYOR_BUILD_VERSION%-%CONFIGURATION%.zip
+
