@@ -1,0 +1,9 @@
+/build*
+reef*
+
+*.o
+
+*.exe
+*.dll
+*.obj
+

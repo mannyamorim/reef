@@ -1,0 +1,9 @@
+[submodule "3rd_party/pdcurses"]
+	path = 3rd_party/pdcurses
+	url = https://github.com/Bill-Gray/PDCurses.git
+[submodule "3rd_party/libgit2"]
+	path = 3rd_party/libgit2
+	url = https://github.com/libgit2/libgit2.git
+[submodule "3rd_party/googletest"]
+	path = 3rd_party/googletest
+	url = https://github.com/google/googletest.git
