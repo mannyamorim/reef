@@ -1,0 +1,35 @@
+#include <windows.h>
+#include "version.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION	REEF_VER_MAJOR, REEF_VER_MINOR, REEF_VER_PATCH, 0
+PRODUCTVERSION	REEF_VER_MAJOR, REEF_VER_MINOR, REEF_VER_PATCH, 0
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+	FILEFLAGS 0x1L
+#else
+	FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE "CompanyName",		"Reef Git Client Project"
+			VALUE "FileDescription",	"Reef - TUI Client for Git"
+			VALUE "FileVersion",		REEF_VER_DOT
+			VALUE "InternalName",		"reef.exe"
+			VALUE "LegalCopyright",		"Copyright (C) 2020 Emmanuel Mathi-Amorim"
+			VALUE "OriginalFilename",	"reef.exe"
+			VALUE "ProductName",		"Reef - TUI Client for Git"
+			VALUE "ProductVersion",		REEF_VER_DOT
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x409, 1200
+	END
+END

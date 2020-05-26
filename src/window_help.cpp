@@ -19,6 +19,7 @@
 #include <git2.h>
 
 #include "window_help.h"
+#include "version.h"
 
 window_help::window_help() :
 	window(LINES, COLS, 0, 0)
@@ -26,17 +27,15 @@ window_help::window_help() :
 	window.set_keypad(true);
 	window.print("Welcome to reef!\n");
 
-	int major, minor, rev;
-	const char *curses_ver;
-
 	/* get libgit version */
+	int major, minor, rev;
 	git_libgit2_version(&major, &minor, &rev);
 
 	/* get curses version */
-	curses_ver = curses_version();
+	const char *curses_ver = curses_version();
 
 	/* print version info to screen */
-	window.print("reef v0.1, libgit v%d.%d.%d, %s\n", major, minor, rev, curses_ver);
+	window.print("reef v%s, libgit v%d.%d.%d, %s\n", REEF_VER_DOT, major, minor, rev, curses_ver);
 }
 
 window_help::~window_help()

@@ -29,6 +29,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 include_directories(include)
 file(GLOB SOURCES "src/*.cpp" "include/*.h")
 
+if(WIN32)
+	list(APPEND SOURCES "resources/reef.rc")
+endif()
+
 add_executable(reef ${SOURCES})
 target_compile_features(reef PRIVATE cxx_std_14)
 install(TARGETS reef CONFIGURATIONS Release RUNTIME DESTINATION bin)
