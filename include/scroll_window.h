@@ -186,6 +186,25 @@ public:
 
 		change_selected_line(new_line);
 	}
+	
+	void change_horiz_scroll(int hscroll)
+	{
+		if (horiz_scroll == hscroll)
+			return;
+		
+		horiz_scroll = hscroll;
+		redraw_lines();
+	}
+	
+	void adjust_horiz_scroll(int delta)
+	{
+		int hscroll = horiz_scroll + delta;
+
+		if (hscroll < 0)
+			hscroll = 0;
+
+		change_horiz_scroll(hscroll);
+	}
 
 private:
 	const int BLOCK_SIZE = 65536;
@@ -199,12 +218,14 @@ private:
 
 	std::unique_ptr<chtype[]> tmp_line_buf;
 
-	int block_usage = 0;
-	int curr_block = 0;
+	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
+	int curr_block = 0;	/* number of the current block */
 
 	int num_lines = 0;	/* number of lines in total in the scroll window */
 	int current_line = 0;	/* the number of the line at the top of the window */
 	int selected_line = 0;	/* the number of the selected/highlighted line */
+	
+	int horiz_scroll = 0;	/* the amount of horizontal scroll that has been applied */
 
 	void add_block()
 	{
@@ -244,15 +265,18 @@ private:
 			const chtype *line_buf = lines[line].first;
 			
 			int i = 0;
-			for (; i < std::min(lines[line].second, win_columns); i++)
-				tmp_line_buf[i] = line_buf[i] | attr;
+			for (; i < std::min(lines[line].second - horiz_scroll, win_columns); i++)
+				tmp_line_buf[i] = line_buf[i + horiz_scroll] | attr;
 			for (; i < win_columns; i++)
 				tmp_line_buf[i] = static_cast<chtype>(' ') | attr;
 
 			window._mvaddchnstr(line - current_line, 0, tmp_line_buf.get(), win_columns);
 		} else {
-			int chars_to_write = std::min(lines[line].second, win_columns);
-			window._mvaddchnstr(line - current_line, 0, lines[line].first, chars_to_write);
+			int chars_to_write = std::min(lines[line].second - horiz_scroll, win_columns);
+			if (chars_to_write < 0)
+				chars_to_write = 0;
+			
+			window._mvaddchnstr(line - current_line, 0, lines[line].first + horiz_scroll, chars_to_write);
 			if (chars_to_write != win_columns) {
 				window._move(line - current_line, chars_to_write);
 				window._clrtoeol();
