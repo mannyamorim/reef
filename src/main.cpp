@@ -44,6 +44,9 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 	/* initialize curses mode */
 	cpp_curses::curses_mode curses_mode_lock;
 
+	/* set the cursor to be invisible */
+	curs_set(0);
+
 	if (has_colors()) {
 		start_color();
 		use_default_colors();
