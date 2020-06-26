@@ -151,18 +151,18 @@ window_base::input_response window_main::process_key_input(int key)
 		cpp_curses::mouse_event event;
 		if (event.scroll_up) {
 			if (event.x > 40 || event.x == -1) {
-				primary_window.adjust_selected_line(-prefs.lines_mouse_scroll);
+				primary_window.adjust_current_line(-prefs.lines_mouse_scroll);
 				primary_window.refresh();
 			} else {
-				refs_window.adjust_selected_line(-prefs.lines_mouse_scroll);
+				refs_window.adjust_current_line(-prefs.lines_mouse_scroll);
 				refs_window.refresh();
 			}
 		} else if (event.scroll_down) {
 			if (event.x > 40 || event.x == -1) {
-				primary_window.adjust_selected_line(+prefs.lines_mouse_scroll);
+				primary_window.adjust_current_line(+prefs.lines_mouse_scroll);
 				primary_window.refresh();
 			} else {
-				refs_window.adjust_selected_line(+prefs.lines_mouse_scroll);
+				refs_window.adjust_current_line(+prefs.lines_mouse_scroll);
 				refs_window.refresh();
 			}
 		}
@@ -189,8 +189,8 @@ window_base::input_response window_main::process_key_input(int key)
 
 				const git_oid &id = refs_window[(refs_window.get_selected_line())]->first;
 				auto it = commit_id_line_map[id];
-				primary_window.change_selected_line(it);
-				
+				primary_window.change_current_and_selected_lines(it, it);
+
 				primary_window.noutrefresh();
 				refs_window.noutrefresh();
 				cpp_curses::curses_mode::_doupdate();
@@ -200,11 +200,11 @@ window_base::input_response window_main::process_key_input(int key)
 	}
 #endif /* REEF_MOUSE_SUPPORTED */
 	case KEY_PPAGE:
-		primary_window.adjust_selected_line(-prefs.lines_page_up_down);
+		primary_window.adjust_current_line(-prefs.lines_page_up_down);
 		primary_window.refresh();
 		return res;
 	case KEY_NPAGE:
-		primary_window.adjust_selected_line(+prefs.lines_page_up_down);
+		primary_window.adjust_current_line(+prefs.lines_page_up_down);
 		primary_window.refresh();
 		return res;
 	case KEY_UP:
@@ -237,7 +237,7 @@ window_base::input_response window_main::process_key_input(int key)
 	{
 		const git_oid &id = refs_window[(refs_window.get_selected_line())]->first;
 		auto it = commit_id_line_map[id];
-		primary_window.change_selected_line(it);
+		primary_window.change_current_and_selected_lines(it, it);
 		primary_window.refresh();
 		return res;
 	}

@@ -111,7 +111,7 @@ public:
 		num_lines = 0;
 		current_line = 0;
 		selected_line = 0;
-		
+
 		blocks.clear();
 		line_data.clear();
 
@@ -142,36 +142,49 @@ public:
 		return window._getch();
 	}
 
+	void change_current_and_selected_lines(int cline, int sline)
+	{
+		if (cline == current_line && sline == selected_line)
+			return;
+
+		if (sline < cline)
+			sline = cline;
+		else if (sline >= cline + win_lines)
+			sline = cline + win_lines - 1;
+
+		const int old_cline = current_line;
+		const int old_sline = selected_line;
+		current_line = cline;
+		selected_line = sline;
+
+		if (old_cline != cline) {
+			window._scrl(cline - old_cline);
+			if (cline > old_cline) {
+				redraw_line(sline);
+				for (int i = old_cline + win_lines; i < current_line + win_lines; i++)
+					redraw_line(i);
+			} else {
+				redraw_line(sline);
+				for (int i = current_line; i < old_cline; i++)
+					redraw_line(i);
+			}
+		}
+
+		redraw_line(old_sline);
+		redraw_line(sline);
+	}
+
 	void change_selected_line(int line)
 	{
 		if (line == selected_line)
 			return;
 
-		const int tmp = selected_line;
-		selected_line = line;
-
-		if (selected_line >= current_line + win_lines) {
-			const int old = current_line;
-			current_line = selected_line - win_lines + 1;
-
-			window._scrl(current_line - old);
-
-			redraw_line(tmp);
-			for (int i = old + win_lines; i < current_line + win_lines; i++)
-				redraw_line(i);
-		} else if (selected_line < current_line) {
-			const int old = current_line;
-			current_line = selected_line;
-
-			window._scrl(current_line - old);
-
-			redraw_line(tmp);
-			for (int i = current_line; i < old; i++)
-				redraw_line(i);
-		} else {
-			redraw_line(tmp);
-			redraw_line(selected_line);
-		}
+		if (line >= current_line + win_lines)
+			change_current_and_selected_lines(line - win_lines + 1, line);
+		else if (line < current_line)
+			change_current_and_selected_lines(line, line);
+		else
+			change_current_and_selected_lines(current_line, line);
 	}
 
 	void adjust_selected_line(int delta)
@@ -186,16 +199,42 @@ public:
 
 		change_selected_line(new_line);
 	}
-	
+
+	void change_current_line(int line)
+	{
+		if (line == current_line)
+			return;
+
+		if (selected_line < line)
+			change_current_and_selected_lines(line, line);
+		else if (selected_line >= line + win_lines)
+			change_current_and_selected_lines(line, line + win_lines - 1);
+		else
+			change_current_and_selected_lines(line, selected_line);
+	}
+
+	void adjust_current_line(int delta)
+	{
+		int new_line = current_line + delta;
+
+		if (new_line >= num_lines)
+			new_line = num_lines - 1;
+
+		if (new_line < 0)
+			new_line = 0;
+
+		change_current_line(new_line);
+	}
+
 	void change_horiz_scroll(int hscroll)
 	{
 		if (horiz_scroll == hscroll)
 			return;
-		
+
 		horiz_scroll = hscroll;
 		redraw_lines();
 	}
-	
+
 	void adjust_horiz_scroll(int delta)
 	{
 		int hscroll = horiz_scroll + delta;
@@ -224,7 +263,7 @@ private:
 	int num_lines = 0;	/* number of lines in total in the scroll window */
 	int current_line = 0;	/* the number of the line at the top of the window */
 	int selected_line = 0;	/* the number of the selected/highlighted line */
-	
+
 	int horiz_scroll = 0;	/* the amount of horizontal scroll that has been applied */
 
 	void add_block()
@@ -263,7 +302,7 @@ private:
 			constexpr chtype attr = A_REVERSE;
 
 			const chtype *line_buf = lines[line].first;
-			
+
 			int i = 0;
 			for (; i < std::min(lines[line].second - horiz_scroll, win_columns); i++)
 				tmp_line_buf[i] = line_buf[i + horiz_scroll] | attr;
@@ -275,7 +314,7 @@ private:
 			int chars_to_write = std::min(lines[line].second - horiz_scroll, win_columns);
 			if (chars_to_write < 0)
 				chars_to_write = 0;
-			
+
 			window._mvaddchnstr(line - current_line, 0, lines[line].first + horiz_scroll, chars_to_write);
 			if (chars_to_write != win_columns) {
 				window._move(line - current_line, chars_to_write);
