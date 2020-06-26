@@ -30,8 +30,19 @@
 
 constexpr int BASE_NUM_OF_COMMITS = 256;
 
-template <int LINE_SIZE>
-static void draw_commit(scroll_window<LINE_SIZE, git::commit> &swin, git::commit &&commit,
+static inline void add_str_to_vec_attr(std::vector<chtype> &chbuf, const char *str, chtype attr)
+{
+	for (size_t i = 0; str[i] != '\0'; i++)
+		chbuf.push_back(static_cast<chtype>(str[i]) | attr);
+}
+
+static inline void add_str_to_vec(std::vector<chtype> &chbuf, const char *str)
+{
+	for (size_t i = 0; str[i] != '\0'; i++)
+		chbuf.push_back(static_cast<chtype>(str[i]));
+}
+
+static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	struct commit_graph_info &graph, graph_list &graph_list, ref_map &refs)
 {
 	const git_signature *author = commit.author();
@@ -40,26 +51,30 @@ static void draw_commit(scroll_window<LINE_SIZE, git::commit> &swin, git::commit
 	char time_buf[20];
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", author_time);
 
-	chtype chbuf[LINE_SIZE];
-	size_t i = graph_list.compute_graph(graph, chbuf);
+	std::vector<chtype> chbuf;
+
+	chtype graphbuf[256];
+	size_t graph_size = graph_list.compute_graph(graph, graphbuf);
+
+	for (size_t i = 0; i < graph_size; i++)
+		chbuf.push_back(graphbuf[i]);
 
 	if (refs.refs.count(*commit.id()) > 0) {
 		auto ref_range = refs.refs.equal_range(*commit.id());
 		for (auto &it = ref_range.first; it != ref_range.second; it++) {
 			constexpr chtype attr = COLOR_PAIR(2) | A_BOLD;
-			add_str_to_buf_attr(chbuf, "[", attr, i);
-			add_str_to_buf_attr(chbuf, it->second.shorthand(), attr, i);
-			add_str_to_buf_attr(chbuf, "]", attr, i);
-			add_str_to_buf(chbuf, " ", i);
+			chbuf.push_back(static_cast<chtype>('[') | attr);
+			add_str_to_vec_attr(chbuf, it->second.shorthand(), attr);
+			chbuf.push_back(static_cast<chtype>(']') | attr);
+			chbuf.push_back(static_cast<chtype>(' '));
 		}
 	}
 
-	add_str_to_buf(chbuf, time_buf, i);
-	add_str_to_buf(chbuf, " ", i);
-	add_str_to_buf(chbuf, commit.summary(), i);
-	terminate_buf(chbuf, i);
+	add_str_to_vec(chbuf, time_buf);
+	add_str_to_vec(chbuf, " ");
+	add_str_to_vec(chbuf, commit.summary());
 
-	swin.add_line(chbuf, std::move(commit));
+	swin.add_line(chbuf.data(), chbuf.size(), std::move(commit));
 }
 
 void window_main::display_commits(int max)
@@ -80,7 +95,7 @@ void window_main::display_refs()
 		size_t i = 0;
 		add_str_to_buf(buf, it.first, i);
 		terminate_buf(buf, i);
-		refs_window.add_line(buf, it.second);
+		refs_window.add_line(buf, REFS_LINE_LENGTH, it.second);
 	}
 }
 

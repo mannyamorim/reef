@@ -48,8 +48,8 @@ private:
 	git::tree tree_a, tree_b;
 	git::diff diff;
 
-	scroll_window<MAIN_LINE_LENGTH, std::pair<const git_diff_delta *, int>> file_window;
-	scroll_window<MAIN_LINE_LENGTH, const git_diff_line *> line_window;
+	scroll_window<std::pair<const git_diff_delta *, int>> file_window;
+	scroll_window<const git_diff_line *> line_window;
 
 	int process_line_callback(const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line);
 };

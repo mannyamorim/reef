@@ -222,6 +222,22 @@ namespace cpp_curses
 			return res;
 		}
 
+		inline int _clrtoeol()
+		{
+			const int res = wclrtoeol(win);
+			if (res == ERR)
+				throw curses_error("curses window wclrtoeol");
+			return res;
+		}
+
+		inline int _move(int y, int x)
+		{
+			const int res = wmove(win, y, x);
+			if (res == ERR)
+				throw curses_error("curses window wmove");
+			return res;
+		}
+
 	private:
 		WINDOW *win;
 	};

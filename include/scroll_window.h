@@ -20,22 +20,17 @@
 #ifndef SCROLL_WINDOW_H
 #define SCROLL_WINDOW_H
 
+#include <algorithm>
+#include <memory>
 #include <vector>
 #include <cstring>
 #include <utility>
 
 #include "cpp_curses.h"
 
-constexpr bool is_powerof2(int v)
-{
-	return v && ((v & (v - 1)) == 0);
-}
-
-template <int LINE_SIZE, typename T>
+template <typename T>
 class scroll_window
 {
-	static_assert(is_powerof2(LINE_SIZE), "error LINE_SIZE should be a power of 2");
-
 public:
 	scroll_window(int nlines, int ncols, int begin_y, int begin_x) :
 		window(nlines, ncols, begin_y, begin_x)
@@ -47,13 +42,8 @@ public:
 		add_block();
 		win_lines = nlines;
 		win_columns = ncols;
-	}
 
-	~scroll_window()
-	{
-		for (auto it : blocks)
-			delete[] it;
-		blocks.clear();
+		tmp_line_buf = std::make_unique<chtype[]>(win_columns);
 	}
 
 	T &operator[](std::size_t idx)
@@ -75,6 +65,8 @@ public:
 
 		win_lines = lines;
 		win_columns = columns;
+
+		tmp_line_buf = std::make_unique<chtype[]>(win_columns);
 
 		if (selected_line_out_of_bounds)
 			change_selected_line(current_line + lines - 1);
@@ -103,11 +95,11 @@ public:
 	}
 
 	template<typename _T>
-	void add_line(const chtype *str, _T &&data)
+	void add_line(const chtype *str, int size, _T &&data)
 	{
-		if (num_lines >= blocks.size() * LINES_PER_BLOCK)
-			add_block();
-		memcpy(get_line_ptr(num_lines), str, LINE_SIZE * sizeof(chtype));
+		chtype *line_memory = get_memory_for_line(size);
+		memcpy(line_memory, str, size * sizeof(chtype));
+		lines.push_back(std::make_pair(line_memory, size));
 		line_data.push_back(std::forward<_T>(data));
 
 		num_lines++;
@@ -197,13 +189,18 @@ public:
 
 private:
 	const int BLOCK_SIZE = 65536;
-	const int LINES_PER_BLOCK = BLOCK_SIZE / (LINE_SIZE * sizeof(chtype));
 
 	cpp_curses::window window;
 	int win_lines, win_columns;
 
-	std::vector<chtype *> blocks;
+	std::vector<std::unique_ptr<chtype[]>> blocks;
+	std::vector<std::pair<chtype *, int>> lines;
 	std::vector<T> line_data;
+
+	std::unique_ptr<chtype[]> tmp_line_buf;
+
+	int block_usage = 0;
+	int curr_block = 0;
 
 	int num_lines = 0;	/* number of lines in total in the scroll window */
 	int current_line = 0;	/* the number of the line at the top of the window */
@@ -211,14 +208,20 @@ private:
 
 	void add_block()
 	{
-		chtype *block = new chtype[BLOCK_SIZE];
-		blocks.push_back(block);
+		blocks.push_back(std::make_unique<chtype[]>(BLOCK_SIZE));
 	}
 
-	chtype *get_line_ptr(int line)
+	chtype *get_memory_for_line(int size)
 	{
-		chtype *block = blocks[line / LINES_PER_BLOCK];
-		return block + ((line % LINES_PER_BLOCK) * LINE_SIZE);
+		if (BLOCK_SIZE - block_usage < size) {
+			add_block();
+			block_usage = 0;
+			curr_block++;
+		}
+
+		chtype *line_memory = &blocks[curr_block][block_usage];
+		block_usage += size;
+		return line_memory;
 	}
 
 	void redraw_lines()
@@ -238,14 +241,22 @@ private:
 		if (line == selected_line) {
 			constexpr chtype attr = A_REVERSE;
 
-			chtype tmp[LINE_SIZE];
-			const chtype *line_buf = get_line_ptr(line);
-			for (int i = 0; i < LINE_SIZE; i++)
-				tmp[i] = line_buf[i] | attr;
+			const chtype *line_buf = lines[line].first;
+			
+			int i = 0;
+			for (; i < std::min(lines[line].second, win_columns); i++)
+				tmp_line_buf[i] = line_buf[i] | attr;
+			for (; i < win_columns; i++)
+				tmp_line_buf[i] = static_cast<chtype>(' ') | attr;
 
-			window._mvaddchnstr(line - current_line, 0, tmp, LINE_SIZE);
+			window._mvaddchnstr(line - current_line, 0, tmp_line_buf.get(), win_columns);
 		} else {
-			window._mvaddchnstr(line - current_line, 0, get_line_ptr(line), LINE_SIZE);
+			int chars_to_write = std::min(lines[line].second, win_columns);
+			window._mvaddchnstr(line - current_line, 0, lines[line].first, chars_to_write);
+			if (chars_to_write != win_columns) {
+				window._move(line - current_line, chars_to_write);
+				window._clrtoeol();
+			}
 		}
 	}
 };

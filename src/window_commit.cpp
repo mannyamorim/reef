@@ -80,7 +80,7 @@ int window_commit::process_line_callback(const git_diff_delta *delta, const git_
 		if (line->content[j] == '\n' || i == MAIN_LINE_LENGTH) {
 			/* start a new line */
 			terminate_buf(buf, i);
-			line_window.add_line(buf, line);
+			line_window.add_line(buf, MAIN_LINE_LENGTH, line);
 			i = 0;
 			j++;
 		} else if (line->content[j] == '\t') {
@@ -99,7 +99,7 @@ int window_commit::process_line_callback(const git_diff_delta *delta, const git_
 		i = 0;
 		add_str_to_buf(buf, delta->new_file.path, i);
 		terminate_buf(buf, i);
-		file_window.add_line(buf, std::make_pair(delta, pos));
+		file_window.add_line(buf, MAIN_LINE_LENGTH, std::make_pair(delta, pos));
 	}
 
 	return 0;
