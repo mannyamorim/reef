@@ -218,11 +218,11 @@ window_base::input_response window_main::process_key_input(int key)
 		primary_window.refresh();
 		return res;
 	case KEY_LEFT:
-		primary_window.adjust_horiz_scroll(-8);
+		primary_window.adjust_horiz_scroll(-prefs.cols_horiz_scroll);
 		primary_window.refresh();
 		return res;
 	case KEY_RIGHT:
-		primary_window.adjust_horiz_scroll(+8);
+		primary_window.adjust_horiz_scroll(+prefs.cols_horiz_scroll);
 		primary_window.refresh();
 		return res;
 	case 'w':
