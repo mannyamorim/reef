@@ -40,10 +40,8 @@ window_commit::window_commit(const git::repository &repo, const preferences &pre
 
 	diff = repo.diff_tree_to_tree(tree_b, tree_a, nullptr);
 
-	const auto print_cb = [this](const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line) {
-		return this->process_line_callback(delta, hunk, line);
-	};
-	diff.print(GIT_DIFF_FORMAT_PATCH, print_cb);
+	using namespace std::placeholders;
+	diff.print(GIT_DIFF_FORMAT_PATCH, std::bind(&window_commit::process_line_callback, this, _1, _2, _3));
 }
 
 int window_commit::process_line_callback(const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line)
