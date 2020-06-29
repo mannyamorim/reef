@@ -56,7 +56,7 @@ int window_commit::process_line_callback(const git_diff_delta *delta, const git_
 		buf[i++] = line->origin;
 		header_size = 1;
 	}
-	
+
 	chtype attr = 0;
 	switch (line->origin) {
 	case GIT_DIFF_LINE_ADDITION:
@@ -136,7 +136,7 @@ window_base::input_response window_commit::process_key_input(int key)
 		cpp_curses::mouse_event event;
 		if (event.scroll_up) {
 			if (event.x > 40 || event.x == -1) {
-				line_window.adjust_selected_line(-prefs.lines_mouse_scroll);
+				line_window.adjust_current_line(-prefs.lines_mouse_scroll);
 				line_window.refresh();
 			} else {
 				file_window.adjust_selected_line(-prefs.lines_mouse_scroll);
@@ -144,7 +144,7 @@ window_base::input_response window_commit::process_key_input(int key)
 			}
 		} else if (event.scroll_down) {
 			if (event.x > 40 || event.x == -1) {
-				line_window.adjust_selected_line(+prefs.lines_mouse_scroll);
+				line_window.adjust_current_line(+prefs.lines_mouse_scroll);
 				line_window.refresh();
 			} else {
 				file_window.adjust_selected_line(+prefs.lines_mouse_scroll);
@@ -171,7 +171,9 @@ window_base::input_response window_commit::process_key_input(int key)
 				int clicked_line = file_window.get_current_line() + event.y;
 				file_window.change_selected_line(clicked_line);
 
-				line_window.change_selected_line(file_window[file_window.get_selected_line()].second);
+				line_window.change_current_and_selected_lines(
+					file_window[file_window.get_selected_line()].second,
+					file_window[file_window.get_selected_line()].second);
 
 				file_window.noutrefresh();
 				line_window.noutrefresh();
@@ -190,7 +192,9 @@ window_base::input_response window_commit::process_key_input(int key)
 		file_window.refresh();
 		return res;
 	case 'g':
-		line_window.change_selected_line(file_window[file_window.get_selected_line()].second);
+		line_window.change_current_and_selected_lines(
+			file_window[file_window.get_selected_line()].second,
+			file_window[file_window.get_selected_line()].second);
 		line_window.refresh();
 		return res;
 	case KEY_UP:
@@ -203,12 +207,20 @@ window_base::input_response window_commit::process_key_input(int key)
 		line_window.adjust_selected_line(+1);
 		line_window.refresh();
 		return res;
+	case KEY_LEFT:
+		line_window.adjust_horiz_scroll(-prefs.cols_horiz_scroll);
+		line_window.refresh();
+		return res;
+	case KEY_RIGHT:
+		line_window.adjust_horiz_scroll(+prefs.cols_horiz_scroll);
+		line_window.refresh();
+		return res;
 	case KEY_PPAGE:
-		line_window.adjust_selected_line(-prefs.lines_page_up_down);
+		line_window.adjust_current_line(-prefs.lines_page_up_down);
 		line_window.refresh();
 		return res;
 	case KEY_NPAGE:
-		line_window.adjust_selected_line(+prefs.lines_page_up_down);
+		line_window.adjust_current_line(+prefs.lines_page_up_down);
 		line_window.refresh();
 		return res;
 	default:
