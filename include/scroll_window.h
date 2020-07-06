@@ -147,10 +147,17 @@ public:
 		if (cline == current_line && sline == selected_line)
 			return;
 
+		if (cline >= num_lines)
+			cline = num_lines - 1;
+		if (cline < 0)
+			cline = 0;
+
 		if (sline < cline)
 			sline = cline;
-		else if (sline >= cline + win_lines)
+		if (sline >= cline + win_lines)
 			sline = cline + win_lines - 1;
+		if (sline >= num_lines)
+			sline = num_lines - 1;
 
 		const int old_cline = current_line;
 		const int old_sline = selected_line;
