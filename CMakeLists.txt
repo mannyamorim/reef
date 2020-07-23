@@ -10,7 +10,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -22,6 +22,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include (ExternalProject)
 # Include the module for finding curses
+set(CURSES_NEED_NCURSES TRUE)
+set(CURSES_NEED_WIDE TRUE)
 include(FindCurses)
 # Set the modules path so we can load the find module for libgit2
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
@@ -119,7 +121,7 @@ else()
 		STEP_TARGETS build
 		EXCLUDE_FROM_ALL TRUE
 	)
-	
+
 	include_directories(${LIBGIT2_INCLUDE_DIR})
 	add_dependencies(reef libgit2-build)
 
@@ -128,4 +130,15 @@ else()
 	add_custom_command(TARGET reef POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${LIBGIT2_LIB_OUTPUT}.dll ${CMAKE_BINARY_DIR}/$<CONFIG>
 	)
+endif()
+
+# utf8proc library
+if(UNIX)
+	find_package(UTF8PROC)
+	if(UTF8PROC_FOUND)
+		include_directories(UTF8PROC_INCLUDE_DIRS)
+		target_link_libraries(reef ${UTF8PROC_LIBRARIES})
+	else()
+		message(FATAL_ERROR "utf8proc not found")
+	endif()
 endif()

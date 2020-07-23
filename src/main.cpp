@@ -112,6 +112,9 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 
 int main(int argc, char * argv[])
 {
+	/* set the locale for curses, must be done before any I/O */
+	setlocale(LC_ALL, "");
+
 	/* init libgit */
 	git::git_library_lock git_library_lock;
 
