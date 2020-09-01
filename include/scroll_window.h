@@ -319,6 +319,7 @@ private:
 				tmp_line_buf[i].chars[0] = L' ';
 				tmp_line_buf[i].chars[1] = L'\0';
 				tmp_line_buf[i].attr = attr;
+				tmp_line_buf[i].ext_color = 0;
 			}
 
 			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, win_columns);

@@ -46,58 +46,63 @@ window_commit::window_commit(const git::repository &repo, const preferences &pre
 
 int window_commit::process_line_callback(const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line)
 {
-	chtype buf[MAIN_LINE_LENGTH];
+	std::vector<char8_t> buf;
 	size_t i = 0, header_size = 0;
 	if (line->origin == GIT_DIFF_LINE_CONTEXT
 		|| line->origin == GIT_DIFF_LINE_ADDITION
 		|| line->origin == GIT_DIFF_LINE_DELETION) {
-		buf[i++] = line->origin;
+		buf.push_back(line->origin);
+		i++;
 		header_size = 1;
 	}
 
-	chtype attr = 0;
+	unsigned char color = 0;
 	switch (line->origin) {
 	case GIT_DIFF_LINE_ADDITION:
-		attr = COLOR_PAIR(2) | A_BOLD;
+		color = 2;
 		break;
 	case GIT_DIFF_LINE_DELETION:
-		attr = COLOR_PAIR(3) | A_BOLD;
+		color = 3;
 		break;
 	case GIT_DIFF_LINE_FILE_HDR:
-		attr = COLOR_PAIR(6) | A_BOLD;
+		color = 6;
 		break;
 	case GIT_DIFF_LINE_HUNK_HDR:
-		attr = COLOR_PAIR(4) | A_BOLD;
+		color = 4;
 		break;
 	}
+
+	char8_t utf[4];
+	pack_runchar(utf, color, 0, 0);
+	push_string_to_vec(buf, utf, 4);
 
 	int pos = line_window.get_num_lines();
 
 	size_t j = 0;
 	while(j < line->content_len) {
-		if (line->content[j] == '\n' || i == MAIN_LINE_LENGTH) {
+		if (line->content[j] == '\n') {
 			/* start a new line */
-			terminate_buf(buf, i);
-			line_window.add_line(buf, MAIN_LINE_LENGTH, line);
+			line_window.add_line(buf.data(), buf.size(), line);
+			buf.clear();
 			i = 0;
+			push_string_to_vec(buf, utf, 4);
 			j++;
 		} else if (line->content[j] == '\t') {
 			/* handle a tab character */
 			const size_t num_spaces_requested = prefs.tab_length - ((i - header_size) % prefs.tab_length);
 			const size_t available_space = MAIN_LINE_LENGTH - i;
-			for (int t = 0; t < std::min(num_spaces_requested, available_space); t++)
-				buf[i++] = static_cast<chtype>(' ');
+			for (int t = 0; t < std::min(num_spaces_requested, available_space); t++, i++)
+				buf.push_back(' ');
 			j++;
 		} else {
-			buf[i++] = static_cast<chtype>(line->content[j++]) | attr;
+			buf.push_back(line->content[j++]);
+			i++;
 		}
 	}
 
 	if (line->origin == GIT_DIFF_LINE_FILE_HDR) {
-		i = 0;
-		add_str_to_buf(buf, delta->new_file.path, i);
-		terminate_buf(buf, i);
-		file_window.add_line(buf, MAIN_LINE_LENGTH, std::make_pair(delta, pos));
+		push_string_to_vec(buf, (char8_t *)delta->new_file.path);
+		file_window.add_line(buf.data(), buf.size(), std::make_pair(delta, pos));
 	}
 
 	return 0;

@@ -68,13 +68,13 @@ constexpr void unpack_runchar(char32_t utf32, unsigned char &color, bool &is_box
 	box_drawing_flags = utf32 & 0b11111;
 }
 
-static inline void push_string_to_vec(std::vector<char8_t> &buf, char8_t str[], size_t size)
+static inline void push_string_to_vec(std::vector<char8_t> &buf, const char8_t str[], size_t size)
 {
 	for (size_t i = 0; i < size; i++)
 		buf.push_back(str[i]);
 }
 
-static inline void push_string_to_vec(std::vector<char8_t> &buf, char8_t str[])
+static inline void push_string_to_vec(std::vector<char8_t> &buf, const char8_t str[])
 {
 	for (size_t i = 0; str[i] != '\0'; i++)
 		buf.push_back(str[i]);
