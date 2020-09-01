@@ -159,7 +159,11 @@ else()
 
 	set(UTF8PROC_LIB_OUTPUT "${UTF8PROC_BINARY_DIR}/$<CONFIG>/utf8proc")
 	target_link_libraries(reef ${UTF8PROC_LIB_OUTPUT})
+	target_link_libraries(reef_test ${UTF8PROC_LIB_OUTPUT})
 	add_custom_command(TARGET reef POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${UTF8PROC_LIB_OUTPUT}.dll ${CMAKE_BINARY_DIR}/$<CONFIG>
+	)
+	add_custom_command(TARGET reef_test POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${UTF8PROC_LIB_OUTPUT}.dll ${CMAKE_BINARY_DIR}/$<CONFIG>
 	)
 endif()
