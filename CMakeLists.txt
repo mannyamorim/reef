@@ -67,6 +67,11 @@ target_link_libraries(reef_test gtest_main)
 enable_testing()
 add_test(NAME reef_test_suite COMMAND reef_test)
 
+# Force Unicode support for the source files
+if(MSVC)
+	target_compile_options(reef_test PUBLIC /utf-8)
+endif()
+
 # Curses library
 if(UNIX)
 	find_package(Curses)
