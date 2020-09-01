@@ -17,6 +17,7 @@
  */
 
 #include <git2.h>
+#include <utf8proc.h>
 
 #include "window_help.h"
 #include "version.h"
@@ -34,8 +35,11 @@ window_help::window_help() :
 	/* get curses version */
 	const char *curses_ver = curses_version();
 
+	/* get utf8proc version */
+	const char *utf8proc_ver = utf8proc_version();
+
 	/* print version info to screen */
-	window.print("reef v%s, libgit v%d.%d.%d, %s\n", REEF_VER_DOT, major, minor, rev, curses_ver);
+	window.print("reef v%s\nlibgit: v%d.%d.%d, utf8proc: %s, curses: %s\n", REEF_VER_DOT, major, minor, rev, utf8proc_ver, curses_ver);
 }
 
 window_help::~window_help()

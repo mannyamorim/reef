@@ -42,9 +42,6 @@ public:
 	input_response process_key_input(int key) override;
 	int _getch() override;
 
-	static constexpr int MAIN_LINE_LENGTH = 256;
-	static constexpr int REFS_LINE_LENGTH = 64;
-
 private:
 	const git::repository &repo;
 	const preferences &prefs;

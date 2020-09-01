@@ -28,6 +28,7 @@
 #include "cpp_git.h"
 #include "cpp_curses.h"
 #include "commit_list.h"
+#include "reef_string.h"
 #include "ref_map.h"
 #include "scroll_window.h"
 #include "graph.h"
@@ -46,6 +47,9 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 
 	/* set the cursor to be invisible */
 	curs_set(0);
+
+	/* initialize array for the box drawing chars */
+	init_line_drawing_chars();
 
 	if (has_colors()) {
 		start_color();

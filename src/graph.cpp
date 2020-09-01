@@ -23,17 +23,10 @@
 
 #include "commit_list.h"
 #include "graph.h"
+#include "reef_string.h"
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
-
-constexpr unsigned char G_EMPTY = 0x00;
-constexpr unsigned char G_LEFT  = 0x01;
-constexpr unsigned char G_RIGHT = 0x02;
-constexpr unsigned char G_UPPER = 0x04;
-constexpr unsigned char G_LOWER = 0x08;
-constexpr unsigned char G_MARK  = 0x10;
-constexpr unsigned char G_INITIAL = 0x20;
 
 unsigned char graph_list::get_next_color()
 {
@@ -54,56 +47,6 @@ void graph_list::remove_color(unsigned char color)
 {
 	assert(color_branches[color - 1] > 0);
 	color_branches[color - 1]--;
-}
-
-/* gets the box drawing character made up from combining the flags */
-static chtype get_graph_char(unsigned char flags)
-{
-	switch (flags) {
-		case (G_LEFT | G_RIGHT | G_UPPER | G_LOWER):
-			return ACS_PLUS;
-		case (G_LEFT | G_RIGHT | G_UPPER          ):
-			return ACS_BTEE;
-		case (G_LEFT | G_RIGHT           | G_LOWER):
-			return ACS_TTEE;
-		case (G_LEFT | G_RIGHT                    ):
-			return ACS_HLINE;
-
-		case (G_LEFT           | G_UPPER | G_LOWER):
-			return ACS_RTEE;
-		case (G_LEFT           | G_UPPER          ):
-			return ACS_LRCORNER;
-		case (G_LEFT                     | G_LOWER):
-			return ACS_URCORNER;
-		case (G_LEFT                              ):
-			return -1;
-
-		case (         G_RIGHT | G_UPPER | G_LOWER):
-			return ACS_LTEE;
-		case (         G_RIGHT | G_UPPER          ):
-			return ACS_LLCORNER;
-		case (         G_RIGHT           | G_LOWER):
-			return ACS_ULCORNER;
-		case (         G_RIGHT                    ):
-			return -1;
-
-		case (                   G_UPPER | G_LOWER):
-			return ACS_VLINE;
-		case (                   G_UPPER          ):
-			return -1;
-		case (                             G_LOWER):
-			return -1;
-
-		case (G_EMPTY):
-			return static_cast<chtype>(' ');
-		case (G_MARK | G_INITIAL):
-			return static_cast<chtype>('I');
-		case (G_MARK):
-			return ACS_BULLET;
-		
-		default:
-			return -1;
-	}
 }
 
 int graph_list::search_for_commit_index(commit_graph_info &graph)
@@ -224,7 +167,7 @@ void graph_list::collapse_graph(std::vector<node>::iterator graph_node, bool nod
 	/* search for emtpy columns to the right */
 	int empty_count = 0;
 	bool commit_found_left = false;
-	
+
 	{
 		auto it = graph_node;
 		while (it != glist.begin()) {
@@ -256,7 +199,7 @@ void graph_list::collapse_graph(std::vector<node>::iterator graph_node, bool nod
 			}
 		}
 	}
-	
+
 	{
 		/* perform actual collapse */
 		graph_node->status = GRAPH_STATUS::CLPSE_BEG;
@@ -290,7 +233,7 @@ void graph_list::search_for_collapses()
 	}
 }
 
-size_t graph_list::compute_graph(commit_graph_info &graph, chtype *buf)
+size_t graph_list::compute_graph(commit_graph_info &graph, std::vector<char8_t> &buf)
 {
 	int graph_index = search_for_commit_index(graph);
 
@@ -380,8 +323,11 @@ size_t graph_list::compute_graph(commit_graph_info &graph, chtype *buf)
 
 	cleanup_empty_graph_right();
 
-	for (int j = 0; j < i; j++)
-		buf[j] = get_graph_char(tmp[j]) | COLOR_PAIR(tmp_clr[j]) | (tmp_clr[j] != 0 ? A_BOLD : 0);
+	for (int j = 0; j < i; j++) {
+		char8_t utf[4];
+		pack_runchar(utf, tmp_clr[j], true, tmp[j]);
+		push_string_to_vec(buf, utf, 4);
+	}
 
 	return i;
 }

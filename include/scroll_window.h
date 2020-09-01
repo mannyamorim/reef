@@ -26,7 +26,10 @@
 #include <cstring>
 #include <utility>
 
+#include <utf8proc.h>
+
 #include "cpp_curses.h"
+#include "reef_string.h"
 
 template <typename T>
 class scroll_window
@@ -43,7 +46,8 @@ public:
 		win_lines = nlines;
 		win_columns = ncols;
 
-		tmp_line_buf = std::make_unique<chtype[]>(win_columns);
+		tmp_line_buf = std::make_unique<cchar_t[]>(MAX_LINE_LENGTH);
+		tmp_codepoint_buf = std::make_unique<utf8proc_int32_t[]>(MAX_LINE_LENGTH);
 	}
 
 	T &operator[](std::size_t idx)
@@ -65,8 +69,6 @@ public:
 
 		win_lines = lines;
 		win_columns = columns;
-
-		tmp_line_buf = std::make_unique<chtype[]>(win_columns);
 
 		if (selected_line_out_of_bounds)
 			change_selected_line(current_line + lines - 1);
@@ -95,10 +97,10 @@ public:
 	}
 
 	template<typename _T>
-	void add_line(const chtype *str, int size, _T &&data)
+	void add_line(const char8_t *str, int size, _T &&data)
 	{
-		chtype *line_memory = get_memory_for_line(size);
-		memcpy(line_memory, str, size * sizeof(chtype));
+		char8_t *line_memory = get_memory_for_line(size);
+		memcpy(line_memory, str, size * sizeof(char8_t));
 		lines.push_back(std::make_pair(line_memory, size));
 		line_data.push_back(std::forward<_T>(data));
 
@@ -258,11 +260,14 @@ private:
 	cpp_curses::window window;
 	int win_lines, win_columns;
 
-	std::vector<std::unique_ptr<chtype[]>> blocks;
-	std::vector<std::pair<chtype *, int>> lines;
+	std::vector<std::unique_ptr<char8_t[]>> blocks;
+	std::vector<std::pair<char8_t *, int>> lines;
 	std::vector<T> line_data;
 
-	std::unique_ptr<chtype[]> tmp_line_buf;
+	const int MAX_LINE_LENGTH = 1024;
+
+	std::unique_ptr<cchar_t[]> tmp_line_buf;
+	std::unique_ptr<utf8proc_int32_t[]> tmp_codepoint_buf;
 
 	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
 	int curr_block = 0;	/* number of the current block */
@@ -275,10 +280,10 @@ private:
 
 	void add_block()
 	{
-		blocks.push_back(std::make_unique<chtype[]>(BLOCK_SIZE));
+		blocks.push_back(std::make_unique<char8_t[]>(BLOCK_SIZE));
 	}
 
-	chtype *get_memory_for_line(int size)
+	char8_t *get_memory_for_line(int size)
 	{
 		if (BLOCK_SIZE - block_usage < size) {
 			add_block();
@@ -286,7 +291,7 @@ private:
 			curr_block++;
 		}
 
-		chtype *line_memory = &blocks[curr_block][block_usage];
+		char8_t *line_memory = &blocks[curr_block][block_usage];
 		block_usage += size;
 		return line_memory;
 	}
@@ -306,23 +311,25 @@ private:
 			return;
 
 		if (line == selected_line) {
-			constexpr chtype attr = A_REVERSE;
+			constexpr attr_t attr = WA_REVERSE;
 
-			const chtype *line_buf = lines[line].first;
+			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, attr);
 
-			int i = 0;
-			for (; i < std::min(lines[line].second - horiz_scroll, win_columns); i++)
-				tmp_line_buf[i] = line_buf[i + horiz_scroll] | attr;
-			for (; i < win_columns; i++)
-				tmp_line_buf[i] = static_cast<chtype>(' ') | attr;
+			for (size_t i = decoded_size; i < win_columns + horiz_scroll; i++) {
+				tmp_line_buf[i].chars[0] = L' ';
+				tmp_line_buf[i].chars[1] = L'\0';
+				tmp_line_buf[i].attr = attr;
+			}
 
-			window._mvaddchnstr(line - current_line, 0, tmp_line_buf.get(), win_columns);
+			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, win_columns);
 		} else {
-			int chars_to_write = std::min(lines[line].second - horiz_scroll, win_columns);
+			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, 0);
+
+			int chars_to_write = std::min(decoded_size - horiz_scroll, win_columns);
 			if (chars_to_write < 0)
 				chars_to_write = 0;
 
-			window._mvaddchnstr(line - current_line, 0, lines[line].first + horiz_scroll, chars_to_write);
+			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
 			if (chars_to_write != win_columns) {
 				window._move(line - current_line, chars_to_write);
 				window._clrtoeol();

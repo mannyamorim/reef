@@ -135,7 +135,7 @@ namespace cpp_curses
 		{
 			delwin(win);
 		}
-		
+
 		inline void print(const char *fmt, ...)
 		{
 			va_list args;
@@ -159,7 +159,7 @@ namespace cpp_curses
 			if (idlok(win, value) == ERR)
 				throw curses_error("curses window setting (idlok) failed");
 		}
-		
+
 		inline void set_scrollok(bool value)
 		{
 			if (scrollok(win, value) == ERR)
@@ -205,6 +205,12 @@ namespace cpp_curses
 		inline void _mvaddchnstr(int y, int x, const chtype *ch, int n)
 		{
 			if (mvwaddchnstr(win, y, x, ch, n) == ERR)
+				throw curses_error("curses mvwaddchnstr failed");
+		}
+
+		inline void _mvwadd_wchnstr(int y, int x, const cchar_t *ch, int n)
+		{
+			if (mvwadd_wchnstr(win, y, x, ch, n) == ERR)
 				throw curses_error("curses mvwaddchnstr failed");
 		}
 

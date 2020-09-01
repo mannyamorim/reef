@@ -32,10 +32,11 @@
 #include <vector>
 
 #include "commit_list.h"
+#include "reef_string.h"
 
 class graph_list {
 public:
-	size_t compute_graph(commit_graph_info &graph, chtype *buf);
+	size_t compute_graph(commit_graph_info &graph, std::vector<char8_t> &buf);
 
 private:
 	enum class GRAPH_STATUS : char {

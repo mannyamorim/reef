@@ -30,18 +30,6 @@
 
 constexpr int BASE_NUM_OF_COMMITS = 256;
 
-static inline void add_str_to_vec_attr(std::vector<chtype> &chbuf, const char *str, chtype attr)
-{
-	for (size_t i = 0; str[i] != '\0'; i++)
-		chbuf.push_back(static_cast<chtype>(str[i]) | attr);
-}
-
-static inline void add_str_to_vec(std::vector<chtype> &chbuf, const char *str)
-{
-	for (size_t i = 0; str[i] != '\0'; i++)
-		chbuf.push_back(static_cast<chtype>(str[i]));
-}
-
 static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	struct commit_graph_info &graph, graph_list &graph_list, ref_map &refs)
 {
@@ -51,28 +39,33 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	char time_buf[20];
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", author_time);
 
-	std::vector<chtype> chbuf;
+	std::vector<char8_t> chbuf;
 
-	chtype graphbuf[256];
-	size_t graph_size = graph_list.compute_graph(graph, graphbuf);
-
-	for (size_t i = 0; i < graph_size; i++)
-		chbuf.push_back(graphbuf[i]);
+	size_t graph_size = graph_list.compute_graph(graph, chbuf);
 
 	if (refs.refs.count(*commit.id()) > 0) {
 		auto ref_range = refs.refs.equal_range(*commit.id());
 		for (auto &it = ref_range.first; it != ref_range.second; it++) {
-			constexpr chtype attr = COLOR_PAIR(2) | A_BOLD;
-			chbuf.push_back(static_cast<chtype>('[') | attr);
-			add_str_to_vec_attr(chbuf, it->second.shorthand(), attr);
-			chbuf.push_back(static_cast<chtype>(']') | attr);
-			chbuf.push_back(static_cast<chtype>(' '));
+			constexpr char clr = 2;
+
+			char8_t utf[4];
+			pack_runchar(utf, clr, 0, 0);
+			push_string_to_vec(chbuf, utf, 4);
+
+			chbuf.push_back('[');
+			push_string_to_vec(chbuf, (char8_t *)it->second.shorthand());
+			chbuf.push_back(']');
+
+			pack_runchar(utf, 0, 0, 0);
+			push_string_to_vec(chbuf, utf, 4);
+
+			chbuf.push_back(' ');
 		}
 	}
 
-	add_str_to_vec(chbuf, time_buf);
-	add_str_to_vec(chbuf, " ");
-	add_str_to_vec(chbuf, commit.summary());
+	push_string_to_vec(chbuf, (char8_t *)time_buf);
+	chbuf.push_back(' ');
+	push_string_to_vec(chbuf, (char8_t *)commit.summary());
 
 	swin.add_line(chbuf.data(), chbuf.size(), std::move(commit));
 }
@@ -90,13 +83,8 @@ void window_main::display_commits(int max)
 
 void window_main::display_refs()
 {
-	for (auto it : refs.refs_ordered) {
-		chtype buf[REFS_LINE_LENGTH];
-		size_t i = 0;
-		add_str_to_buf(buf, it.first, i);
-		terminate_buf(buf, i);
-		refs_window.add_line(buf, REFS_LINE_LENGTH, it.second);
-	}
+	for (auto it : refs.refs_ordered)
+		refs_window.add_line((char8_t *)it.first, strlen(it.first), it.second);
 }
 
 window_main::window_main(const git::repository &repo, const preferences &prefs) :
