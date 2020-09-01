@@ -23,11 +23,7 @@
 #define GRAPH_MAX_WIDTH 128
 #define GRAPH_MAX_COLORS 6
 
-#ifdef __UNIT_TESTING__
-#include <curses_test.h>
-#else
 #include <curses.h>
-#endif /* __UNIT_TESTING__ */
 
 #include <vector>
 

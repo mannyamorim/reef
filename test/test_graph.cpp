@@ -29,20 +29,45 @@ constexpr size_t count_of(T(&)[size])
 	return size;
 }
 
+char32_t test_line_drawing_chars[] = {
+	U' ', /* 00 = G_EMPTY                              */
+	U' ', /* 01 = G_LEFT                               */
+	U' ', /* 02 =          G_RIGHT                     */
+	U'─', /* 03 = G_LEFT | G_RIGHT                     */
+
+	U' ', /* 04 =                    G_UPPER           */
+	U'┘', /* 05 = G_LEFT           | G_UPPER           */
+	U'└', /* 06 =          G_RIGHT | G_UPPER           */
+	U'┴', /* 07 = G_LEFT | G_RIGHT | G_UPPER           */
+
+	U' ', /* 08 =                              G_LOWER */
+	U'┐', /* 09 = G_LEFT                     | G_LOWER */
+	U'┌', /* 10 =          G_RIGHT           | G_LOWER */
+	U'┬', /* 11 = G_LEFT | G_RIGHT           | G_LOWER */
+
+	U'│', /* 12 =                    G_UPPER | G_LOWER */
+	U'┤', /* 13 = G_LEFT           | G_UPPER | G_LOWER */
+	U'├', /* 14 =          G_RIGHT | G_UPPER | G_LOWER */
+	U'┼', /* 15 = G_LEFT | G_RIGHT | G_UPPER | G_LOWER */
+
+	U'•', /* 16 = G_MARK                               */
+	U'I', /* 17 = G_INITIAL                            */
+};
+
 /* fixture for testing methods of the graph class */
 class graph_test_fxt : public testing::Test
 {
 protected:
 	graph_list glist;
-	chtype buf[GRAPH_MAX_WIDTH];
+	std::vector<char8_t> buf;
+	utf8proc_int32_t codepoints[1024];
 
 	void run_graph_test(
 		std::unordered_set<unsigned int> &&duplicate_ids,
 		std::vector<unsigned int> &&new_parent_ids,
 		const unsigned int id_of_commit,
 		const unsigned int num_parents,
-		const size_t expected_size,
-		const chtype *expected)
+		const char32_t *expected)
 	{
 		commit_graph_info graph_info;
 		graph_info.duplicate_ids = std::move(duplicate_ids);
@@ -50,437 +75,418 @@ protected:
 		graph_info.id_of_commit = id_of_commit;
 		graph_info.num_parents = num_parents;
 
-		const size_t res = glist.compute_graph(graph_info, buf);
+		buf.clear();
+		glist.compute_graph(graph_info, buf);
 
-		EXPECT_EQ(res, expected_size);
-		EXPECT_EQ(memcmp(buf, expected, expected_size * sizeof(chtype)), 0);
+		/* decode the UTF8 into UTF32 codepoints */
+		size_t codepoints_decoded = utf8proc_decompose(buf.data(), buf.size(), codepoints, 1024, UTF8PROC_COMPOSE);
+
+		for (size_t i = 0; i < codepoints_decoded; i++) {
+			if (codepoints[i] >= 0x100000) {
+				/* we found a marker to switch colors and potentially write out a box drawing character */
+				unsigned char new_color;
+				bool is_box_drawing_char;
+				unsigned char box_drawing_flags;
+				unpack_runchar(codepoints[i], new_color, is_box_drawing_char, box_drawing_flags);
+
+				if (is_box_drawing_char) {
+					codepoints[i] = test_line_drawing_chars[box_drawing_flags];
+				}
+			}
+		}
+
+		size_t expected_size = std::char_traits<char32_t>::length(expected);
+		EXPECT_EQ(codepoints_decoded, expected_size);
+		EXPECT_EQ(memcmp(codepoints, expected, expected_size * sizeof(char32_t)), 0);
 	}
 };
 
 /* basic test of the compute_graph method */
 TEST_F(graph_test_fxt, test_single_commit)
 {
-	const chtype expected[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected), expected
+		U"• "
 	);
 }
 
 /* test new branch
- * +
- * | +
- * + |
+ * •
+ * │ •
+ * • │
  */
 TEST_F(graph_test_fxt, test_new_branch)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_BULLET, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"• │ "
 	);
 }
 
 /* test basic merge
- * +
- * +--
- * | +
+ * •
+ * •─┐
+ * │ •
  */
 TEST_F(graph_test_fxt, test_basic_merge)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_BULLET, ACS_HLINE, ACS_URCORNER, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{ 2 },	/* new_parent_ids */
 		1,	/* id_of_commit */
 		2,	/* num_parents */
-		count_of(expected2), expected2
+		U"•─┐ "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ • "
 	);
 }
 
 /* test basic duplicate
- * +
- * | +
- * +--
+ * •
+ * │ •
+ * •─┘
  */
 TEST_F(graph_test_fxt, test_basic_duplicate)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_BULLET, ACS_HLINE, ACS_LRCORNER, ' ' };
 	run_graph_test(
 		{ 2 },	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"•─┘ "
 	);
 }
 
 /* test 3 head merge
- * +----
- * | + |
- * | | +
+ * •─┬─┐
+ * │ • │
+ * │ │ •
  */
 TEST_F(graph_test_fxt, test_3_head_merge)
 {
-	const chtype expected1[] = { ACS_BULLET, ACS_HLINE, ACS_TTEE, ACS_HLINE, ACS_URCORNER, ' ' };
 	run_graph_test(
 		{},		/* duplicate_ids */
 		{ 2, 3 },	/* new_parent_ids */
 		1,		/* id_of_commit */
 		3,		/* num_parents */
-		count_of(expected1), expected1
+		U"•─┬─┐ "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • │ "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ │ • "
 	);
 }
 
 /* test 3 duplicate
- * +
- * | + 
- * | | +
- * +----
+ * •
+ * │ •
+ * │ │ •
+ * •─┴─┘
  */
 TEST_F(graph_test_fxt, test_3_duplicate)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ │ • "
 	);
 
-	const chtype expected4[] = { ACS_BULLET, ACS_HLINE, ACS_BTEE, ACS_HLINE, ACS_LRCORNER, ' ' };
 	run_graph_test(
 		{ 1, 3 },	/* duplicate_ids */
 		{},		/* new_parent_ids */
 		2,		/* id_of_commit */
 		1,		/* num_parents */
-		count_of(expected4), expected4
+		U"•─┴─┘ "
 	);
 }
 
 /* test 3 way duplicate and merge
- * +----
- * | + |
- * | | +
- * +----
- * | + |
- * | | +
+ * •─┬─┐
+ * │ • │
+ * │ │ •
+ * •─┼─┤
+ * │ • │
+ * │ │ •
  */
 TEST_F(graph_test_fxt, test_3_head_merge_and_duplicate)
 {
-	const chtype expected1[] = { ACS_BULLET, ACS_HLINE, ACS_TTEE, ACS_HLINE, ACS_URCORNER, ' ' };
 	run_graph_test(
 		{},		/* duplicate_ids */
 		{ 2, 3 },	/* new_parent_ids */
 		1,		/* id_of_commit */
 		3,		/* num_parents */
-		count_of(expected1), expected1
+		U"•─┬─┐ "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • │ "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ │ • "
 	);
 
-	const chtype expected4[] = { ACS_BULLET, ACS_HLINE, ACS_PLUS, ACS_HLINE, ACS_RTEE, ' ' };
 	run_graph_test(
 		{ 1, 3 },	/* duplicate_ids */
 		{ 4, 5 },	/* new_parent_ids */
 		2,		/* id_of_commit */
 		3,		/* num_parents */
-		count_of(expected4), expected4
+		U"•─┼─┤ "
 	);
 
-	const chtype expected5[] = { ACS_VLINE, ' ', ACS_BULLET, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		4,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected5), expected5
+		U"│ • │ "
 	);
 
-	const chtype expected6[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		5,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected6), expected6
+		U"│ │ • "
 	);
 }
 
 /* test merge through a branch
- * +
- * | + 
- * +-|--
- * | | +
- * +-|--
+ * •
+ * │ •
+ * •─│─┐
+ * │ │ •
+ * •─│─┘
  */
 TEST_F(graph_test_fxt, test_merge_through_a_branch)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_BULLET, ACS_HLINE, ACS_VLINE, ACS_HLINE, ACS_URCORNER, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{ 3 },	/* new_parent_ids */
 		1,	/* id_of_commit */
 		2,	/* num_parents */
-		count_of(expected3), expected3
+		U"•─│─┐ "
 	);
 
-	const chtype expected4[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected4), expected4
+		U"│ │ • "
 	);
 
-	const chtype expected5[] = { ACS_BULLET, ACS_HLINE, ACS_VLINE, ACS_HLINE, ACS_LRCORNER, ' ' };
 	run_graph_test(
 		{ 1 },	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected5), expected5
+		U"•─│─┘ "
 	);
 }
 
 /* test merge with empty space
- * +
- * | +
- * | | +
- * +-- |
- * +-- |
+ * •
+ * │ •
+ * │ │ •
+ * •─┘ │
+ * •─┐ │
  */
 TEST_F(graph_test_fxt, test_merge_with_empty_space)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ │ • "
 	);
 
-	const chtype expected4[] = { ACS_BULLET, ACS_HLINE, ACS_LRCORNER, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{ 2 },	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected4), expected4
+		U"•─┘ │ "
 	);
 
-	const chtype expected5[] = { ACS_BULLET, ACS_HLINE, ACS_URCORNER, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{ 4 },	/* new_parent_ids */
 		1,	/* id_of_commit */
 		2,	/* num_parents */
-		count_of(expected5), expected5
+		U"•─┐ │ "
 	);
 }
 
 /* test basic collapse
- * +
- * | +
- * | | +
- * +-- |
- * + ---
+ * •
+ * │ •
+ * │ │ •
+ * •─┘ │
+ * • ┌─┘
  */
 TEST_F(graph_test_fxt, test_basic_collapse)
 {
-	const chtype expected1[] = { ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected1), expected1
+		U"• "
 	);
 
-	const chtype expected2[] = { ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		2,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected2), expected2
+		U"│ • "
 	);
 
-	const chtype expected3[] = { ACS_VLINE, ' ', ACS_VLINE, ' ', ACS_BULLET, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		3,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected3), expected3
+		U"│ │ • "
 	);
 
-	const chtype expected4[] = { ACS_BULLET, ACS_HLINE, ACS_LRCORNER, ' ', ACS_VLINE, ' ' };
 	run_graph_test(
 		{ 2 },	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected4), expected4
+		U"•─┘ │ "
 	);
 
-	const chtype expected5[] = { ACS_BULLET, ' ', ACS_ULCORNER, ACS_HLINE, ACS_LRCORNER, ' ' };
 	run_graph_test(
 		{},	/* duplicate_ids */
 		{},	/* new_parent_ids */
 		1,	/* id_of_commit */
 		1,	/* num_parents */
-		count_of(expected5), expected5
+		U"• ┌─┘ "
 	);
 }

@@ -57,7 +57,6 @@ include_directories(${GTEST_SOURCE_DIR}/googletest/include)
 add_executable(reef_test
 	test/main.cpp
 	test/test_graph.cpp
-	test/curses_test.h
 	src/graph.cpp
 )
 target_include_directories(reef_test PUBLIC test)
@@ -138,6 +137,7 @@ if(UNIX)
 	if(UTF8PROC_FOUND)
 		include_directories(UTF8PROC_INCLUDE_DIRS)
 		target_link_libraries(reef ${UTF8PROC_LIBRARIES})
+		target_link_libraries(reef_test ${UTF8PROC_LIBRARIES})
 	else()
 		message(FATAL_ERROR "utf8proc not found")
 	endif()
