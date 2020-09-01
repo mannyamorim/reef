@@ -113,6 +113,38 @@ TEST_F(graph_test_fxt, test_single_commit)
 	);
 }
 
+/* test initial commit
+ * •
+ * │ •
+ * I │
+ */
+TEST_F(graph_test_fxt, test_initial_commit)
+{
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		2,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		0,	/* num_parents */
+		U"I │ "
+	);
+}
+
 /* test new branch
  * •
  * │ •
