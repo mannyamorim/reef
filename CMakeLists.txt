@@ -85,12 +85,12 @@ else()
 	ExternalProject_Add(pdcurses
 		SOURCE_DIR ${PDC_SOURCE_DIR}
 		BINARY_DIR ${PDC_BINARY_DIR}
-		CMAKE_ARGS -DPDCDEBUG=OFF -DPDC_BUILD_SHARED=ON -DPDC_SDL2_BUILD=OFF -DPDC_SDL2_DEPS_BUILD=OFF
+		CMAKE_ARGS -DPDCDEBUG=OFF -DPDC_BUILD_SHARED=ON -DPDC_WIDE=ON -DPDC_SDL2_BUILD=OFF -DPDC_SDL2_DEPS_BUILD=OFF
 		STEP_TARGETS build
 		EXCLUDE_FROM_ALL TRUE
 	)
 
-	add_compile_definitions(PDC_DLL_BUILD)
+	add_compile_definitions(PDC_DLL_BUILD PDC_WIDE)
 	include_directories(${PDC_INCLUDE_DIR})
 	add_dependencies(reef pdcurses-build)
 
@@ -142,4 +142,24 @@ if(UNIX)
 	else()
 		message(FATAL_ERROR "utf8proc not found")
 	endif()
+else()
+	set(UTF8PROC_SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rd_party/utf8proc/")
+	set(UTF8PROC_BINARY_DIR "utf8proc-bin")
+
+	ExternalProject_Add(utf8proc
+		SOURCE_DIR ${UTF8PROC_SOURCE_DIR}
+		BINARY_DIR ${UTF8PROC_BINARY_DIR}
+		CMAKE_ARGS -DBUILD_SHARED_LIBS=ON
+		STEP_TARGETS build
+		EXCLUDE_FROM_ALL TRUE
+	)
+
+	include_directories(${UTF8PROC_SOURCE_DIR})
+	add_dependencies(reef utf8proc-build)
+
+	set(UTF8PROC_LIB_OUTPUT "${UTF8PROC_BINARY_DIR}/$<CONFIG>/utf8proc")
+	target_link_libraries(reef ${UTF8PROC_LIB_OUTPUT})
+	add_custom_command(TARGET reef POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${UTF8PROC_LIB_OUTPUT}.dll ${CMAKE_BINARY_DIR}/$<CONFIG>
+	)
 endif()

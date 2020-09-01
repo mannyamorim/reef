@@ -315,12 +315,8 @@ private:
 
 			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, attr);
 
-			for (size_t i = decoded_size; i < win_columns + horiz_scroll; i++) {
-				tmp_line_buf[i].chars[0] = L' ';
-				tmp_line_buf[i].chars[1] = L'\0';
-				tmp_line_buf[i].attr = attr;
-				tmp_line_buf[i].ext_color = 0;
-			}
+			for (size_t i = decoded_size; i < win_columns + horiz_scroll; i++)
+				pack_cchar_t(&tmp_line_buf[i], U" ", attr, 0);
 
 			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, win_columns);
 		} else {

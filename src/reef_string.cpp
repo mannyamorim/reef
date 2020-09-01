@@ -20,13 +20,16 @@
 
 #include "reef_string.h"
 
-cchar_t line_drawing_empty = { 0, { L' ', L'\0' }, 0 };
-cchar_t line_drawing_initial = { 0, { L'I', L'\0' }, 0 };
+cchar_t line_drawing_empty;
+cchar_t line_drawing_initial;
 
 cchar_t* line_drawing_chars[num_line_drawing_chars];
 
 void init_line_drawing_chars()
 {
+	pack_cchar_t(&line_drawing_empty, U" ", 0, 0);
+	pack_cchar_t(&line_drawing_initial, U"I", 0, 0);
+
 	cchar_t *tmp[num_line_drawing_chars] = {
 		&line_drawing_empty,   /* 00 = G_EMPTY                              */
 		&line_drawing_empty,   /* 01 = G_LEFT                               */
@@ -58,7 +61,7 @@ void init_line_drawing_chars()
 int print_wchtype_buf(cchar_t *dest, utf8proc_int32_t *codepoints, size_t dest_len, const char8_t *buf, size_t buf_len, attr_t attr)
 {
 	/* decode the UTF8 into UTF32 codepoints */
-	ssize_t codepoints_decoded = utf8proc_decompose(buf, buf_len, codepoints, dest_len, UTF8PROC_COMPOSE);
+	size_t codepoints_decoded = utf8proc_decompose(buf, buf_len, codepoints, dest_len, UTF8PROC_COMPOSE);
 
 	/* state needed to find grapheme cluster breaks */
 	utf8proc_int32_t grapheme_state = 0;
@@ -80,15 +83,14 @@ int print_wchtype_buf(cchar_t *dest, utf8proc_int32_t *codepoints, size_t dest_l
 
 			if (is_box_drawing_char) {
 				memcpy(&dest[j], line_drawing_chars[box_drawing_flags], sizeof(cchar_t));
-				dest[j].attr |= attr;
-				dest[j].ext_color = color;
+				set_cchar_t_attr(&dest[j], get_cchar_t_attr(&dest[j]) | attr);
+				set_cchar_t_color(&dest[j], color);
 				j++;
 			}
 		} else {
-			dest[j].ext_color = color;
-			dest[j].attr = attr;
-			dest[j].chars[0] = codepoints[i];
-			dest[j].chars[1] = L'\0';
+			char32_t chars[4] = { 0 };
+			chars[0] = codepoints[i];
+			pack_cchar_t(&dest[j], chars, attr, color);
 			j++;
 		}
 	}

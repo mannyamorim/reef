@@ -80,6 +80,42 @@ static inline void push_string_to_vec(std::vector<char8_t> &buf, const char8_t s
 		buf.push_back(str[i]);
 }
 
+static inline void pack_cchar_t(cchar_t *cchar, const char32_t *str, const attr_t attrs, const short color_pair)
+{
+#ifdef PDCURSES
+        *cchar = str[0] | attrs | COLOR_PAIR(color_pair);
+#else
+        setcchar(cchar, (const wchar_t *)str, attrs, color_pair, nullptr);
+#endif /* PDCURSES */
+}
+
+static inline attr_t get_cchar_t_attr(cchar_t *cchar)
+{
+#ifdef PDCURSES
+        return *cchar & (A_ATTRIBUTES & ~A_COLOR);
+#else
+        return cchar->attr;
+#endif /* PDCURSES */
+}
+
+constexpr void set_cchar_t_attr(cchar_t *cchar, const attr_t attrs)
+{
+#ifdef PDCURSES
+        *cchar = (*cchar & ~(A_ATTRIBUTES & ~A_COLOR)) | attrs;
+#else
+        cchar->attr = attrs;
+#endif /* PDCURSES */
+}
+
+constexpr void set_cchar_t_color(cchar_t *cchar, const short color_pair)
+{
+#ifdef PDCURSES
+        *cchar = (*cchar & ~A_COLOR) | COLOR_PAIR(color_pair);
+#else
+        cchar->ext_color = color_pair;
+#endif /* PDCURSES */
+}
+
 constexpr unsigned char G_EMPTY = 0x00;
 constexpr unsigned char G_LEFT  = 0x01;
 constexpr unsigned char G_RIGHT = 0x02;
