@@ -6,16 +6,16 @@ configuration:
 
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu1804'
+    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu2004'
       CMAKE_COMPILER_ARGS: '-D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++'
 
-    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu1804'
+    - APPVEYOR_BUILD_WORKER_IMAGE: 'Ubuntu2004'
       CMAKE_COMPILER_ARGS: '-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++'
 
     - APPVEYOR_BUILD_WORKER_IMAGE: 'Visual Studio 2019'
 
 install:
-  - sh: sudo apt -y install libncurses5-dev libgit2-dev
+  - sh: sudo apt -y install libncurses-dev libgit2-dev libutf8proc-dev
 
 before_build:
   - git submodule update --init --recursive
