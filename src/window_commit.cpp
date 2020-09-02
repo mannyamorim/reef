@@ -101,6 +101,7 @@ int window_commit::process_line_callback(const git_diff_delta *delta, const git_
 	}
 
 	if (line->origin == GIT_DIFF_LINE_FILE_HDR) {
+		buf.clear();
 		push_string_to_vec(buf, (char8_t *)delta->new_file.path);
 		file_window.add_line(buf.data(), buf.size(), std::make_pair(delta, pos));
 	}

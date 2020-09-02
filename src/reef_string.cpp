@@ -18,6 +18,8 @@
 
 #include <utf8proc.h>
 
+#include <stdexcept>
+
 #include "reef_string.h"
 
 cchar_t line_drawing_empty;
@@ -61,7 +63,20 @@ void init_line_drawing_chars()
 int print_wchtype_buf(cchar_t *dest, utf8proc_int32_t *codepoints, size_t dest_len, const char8_t *buf, size_t buf_len, attr_t attr)
 {
 	/* decode the UTF8 into UTF32 codepoints */
-	size_t codepoints_decoded = utf8proc_decompose(buf, buf_len, codepoints, dest_len, UTF8PROC_COMPOSE);
+	size_t utf8_bytes_read = 0;
+	size_t codepoints_decoded = 0;
+	while (utf8_bytes_read < buf_len) {
+		size_t res = utf8proc_iterate(buf + utf8_bytes_read, buf_len, codepoints + codepoints_decoded);
+		if (res > 0) {
+			utf8_bytes_read += res;
+			codepoints_decoded++;
+		} else {
+			throw std::invalid_argument("print_wchtype_buf: error while decoding UTF8");
+		}
+	}
+
+	/* normalize characters */
+	codepoints_decoded = utf8proc_normalize_utf32(codepoints, codepoints_decoded, (utf8proc_option_t)(UTF8PROC_NLF2LF | UTF8PROC_COMPOSE));
 
 	/* state needed to find grapheme cluster breaks */
 	utf8proc_int32_t grapheme_state = 0;
@@ -82,15 +97,35 @@ int print_wchtype_buf(cchar_t *dest, utf8proc_int32_t *codepoints, size_t dest_l
 			color = new_color;
 
 			if (is_box_drawing_char) {
+				/* check for illegal box drawing flags which will cause a SEGFAULT */
+				if (box_drawing_flags >= num_line_drawing_chars)
+					throw std::invalid_argument("print_wchtype_buf: illegal box_drawing_flags found");
+
 				memcpy(&dest[j], line_drawing_chars[box_drawing_flags], sizeof(cchar_t));
-				set_cchar_t_attr(&dest[j], get_cchar_t_attr(&dest[j]) | attr);
+				set_cchar_t_attr(&dest[j], get_cchar_t_attr(&dest[j]) | attr | (color != 0 ? A_BOLD : 0));
 				set_cchar_t_color(&dest[j], color);
 				j++;
 			}
 		} else {
-			char32_t chars[4] = { 0 };
+#ifdef PDCURSES
+			constexpr size_t max_cchar_characters = 1;
+#else
+			constexpr size_t max_cchar_characters = CCHARW_MAX;
+#endif // PDCURSES
+
+			char32_t chars[max_cchar_characters] = { 0 };
 			chars[0] = codepoints[i];
-			pack_cchar_t(&dest[j], chars, attr, color);
+			size_t k = 1;
+
+			/* look for additional combining characters */
+			while (i + 1 < codepoints_decoded && !utf8proc_grapheme_break_stateful(codepoints[i], codepoints[i + 1], &grapheme_state)) {
+				if (k < max_cchar_characters)
+					chars[k++] = codepoints[i + 1];
+
+				i++;
+			}
+
+			pack_cchar_t(&dest[j], chars, attr | (color != 0 ? A_BOLD : 0), color);
 			j++;
 		}
 	}
