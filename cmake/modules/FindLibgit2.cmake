@@ -1,3 +1,7 @@
+# Taken from https://github.com/libgit2/libgit2-backends
+# libgit2 is Copyright (C) the libgit2 contributors
+# Licensed under the GNU GPL v2. See link above for more info.
+
 # - Try to find the libgit2 library
 # Once done this will define
 #
@@ -31,4 +35,3 @@ INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(libgit2 DEFAULT_MSG LIBGIT2_LIBRARIES LIBGIT2_INCLUDE_DIR)
 
 MARK_AS_ADVANCED(LIBGIT2_INCLUDE_DIR LIBGIT2_LIBRARIES)
-

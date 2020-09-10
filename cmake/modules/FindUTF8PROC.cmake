@@ -1,3 +1,7 @@
+# Taken from https://github.com/neovim/neovim/blob/b871100be7a6ae5ce1db23a688c593ecaa2390b8/cmake/FindUtf8proc.cmake
+# Copyright Neovim contributors. All rights reserved.
+# Licensed under Apache 2.0 license. See link above for details.
+
 # - Try to find utf8proc
 # Once done this will define
 #  UTF8PROC_FOUND - System has utf8proc
