@@ -1,0 +1,15 @@
+Source: reef
+Section: vcs
+Priority: optional
+Maintainer: Emmanuel Mathi-Amorim <manny@amorim.ca>
+Build-Depends: cmake, debhelper (>=12~), googletest, libgit2-dev, libncurses-dev, libutf8proc-dev, extra-cmake-modules
+Standards-Version: 4.3.0
+Homepage: https://github.com/mannyamorim/reef
+
+Package: reef
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Enhances: git
+Description: TUI Client for Git
+ View your Git repositories interactively in a terminal.
