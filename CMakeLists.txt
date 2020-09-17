@@ -45,7 +45,11 @@ install(TARGETS reef CONFIGURATIONS Release RUNTIME DESTINATION bin)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 # Add googletest directly to our build. This defines the gtest and gtest_main targets.
-set(GTEST_SOURCE_DIR ${CMAKE_SOURCE_DIR}/3rd_party/googletest/)
+if(UNIX)
+	set(GTEST_SOURCE_DIR /usr/src/googletest/ CACHE PATH "Path to the googletest sources. Defaults to /usr/src/googletest. May have to change if your distro places the sources in a different folder.")
+else()
+	set(GTEST_SOURCE_DIR ${CMAKE_SOURCE_DIR}/3rd_party/googletest/)
+endif()
 add_subdirectory(
 	${GTEST_SOURCE_DIR}
 	googletest-bin
