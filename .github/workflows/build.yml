@@ -24,10 +24,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: 'true'
+        submodules: 'false'
 
     - name: install deps
-      run: sudo apt install libncurses-dev libgit2-dev libutf8proc-dev
+      run: sudo apt install libncurses-dev libgit2-dev libutf8proc-dev googletest
 
     - name: setup build directory
       run: mkdir build

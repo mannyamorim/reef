@@ -15,7 +15,7 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: 'Visual Studio 2019'
 
 install:
-  - sh: sudo apt -y install libncurses-dev libgit2-dev libutf8proc-dev
+  - sh: sudo apt -y install libncurses-dev libgit2-dev libutf8proc-dev googletest
 
 before_build:
   - git submodule update --init --recursive
