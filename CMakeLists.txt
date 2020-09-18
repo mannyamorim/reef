@@ -25,7 +25,12 @@ include (ExternalProject)
 set(CURSES_NEED_NCURSES TRUE)
 set(CURSES_NEED_WIDE TRUE)
 include(FindCurses)
-# Set the modules path so we can load the find module for libgit2
+# If using UNIX load the ECM extra-cmake-modules package to find LibGit2
+if(UNIX)
+	find_package(ECM REQUIRED NO_MODULE)
+	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_FIND_MODULE_DIR})
+endif()
+# Set the modules path so we can load the find module for UTF8PROC
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 include_directories(include)
@@ -112,7 +117,7 @@ endif()
 
 # Libgit2 library
 if(UNIX)
-	find_package(Libgit2)
+	find_package(LibGit2)
 	if(LIBGIT2_FOUND)
 		include_directories(LIBGIT2_INCLUDE_DIR)
 		target_link_libraries(reef ${LIBGIT2_LIBRARIES})
