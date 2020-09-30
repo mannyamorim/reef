@@ -1,0 +1,9 @@
+/.github	export-ignore
+/3rd_party	export-ignore
+/debian		export-ignore
+
+.gitattributes	export-ignore
+.gitignore	export-ignore
+.gitmodules	export-ignore
+
+appveyor.yml	export-ignore
