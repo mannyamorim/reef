@@ -1,0 +1,8 @@
+.github/
+3rd_party/
+
+.gitattributes
+.gitignore
+.gitmodules
+
+appveyor.yml
