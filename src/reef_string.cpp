@@ -65,7 +65,7 @@ int print_wchtype_buf(cchar_t *dest, utf8proc_int32_t *codepoints, size_t dest_l
 	/* decode the UTF8 into UTF32 codepoints */
 	size_t utf8_bytes_read = 0;
 	size_t codepoints_decoded = 0;
-	while (utf8_bytes_read < buf_len) {
+	while (utf8_bytes_read < buf_len && codepoints_decoded < dest_len) {
 		size_t res = utf8proc_iterate(buf + utf8_bytes_read, buf_len, codepoints + codepoints_decoded);
 		if (res > 0) {
 			utf8_bytes_read += res;

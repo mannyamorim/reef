@@ -315,10 +315,24 @@ private:
 
 			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, attr);
 
-			for (size_t i = decoded_size; i < win_columns + horiz_scroll; i++)
-				pack_cchar_t(&tmp_line_buf[i], U" ", attr, 0);
+			int chars_to_write = std::min(decoded_size - horiz_scroll, win_columns);
+			if (chars_to_write < 0)
+				chars_to_write = 0;
 
-			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, win_columns);
+			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
+			if (chars_to_write != win_columns) {
+				cchar_t orig_bkrnd;
+				window._wgetbkgrnd(&orig_bkrnd);
+
+				cchar_t new_bkrnd;
+				pack_cchar_t(&new_bkrnd, U" ", attr, 0);
+				window._wbkgrndset(&new_bkrnd);
+
+				window._move(line - current_line, chars_to_write);
+				window._clrtoeol();
+
+				window._wbkgrndset(&orig_bkrnd);
+			}
 		} else {
 			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, 0);
 

@@ -244,6 +244,19 @@ namespace cpp_curses
 			return res;
 		}
 
+		inline int _wgetbkgrnd(cchar_t *cchar)
+		{
+			const int res = wgetbkgrnd(win, cchar);
+			if (res == ERR)
+				throw curses_error("curses window wgetbkgrnd");
+			return res;
+		}
+
+		inline void _wbkgrndset(const cchar_t *cchar)
+		{
+			wbkgrndset(win, cchar);
+		}
+
 	private:
 		WINDOW *win;
 	};
