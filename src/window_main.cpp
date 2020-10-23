@@ -20,7 +20,6 @@
 
 #include <git2.h>
 
-#include "chtype_buf_utilities.h"
 #include "commit_list.h"
 #include "ref_map.h"
 #include "scroll_window.h"

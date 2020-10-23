@@ -20,7 +20,6 @@
 
 #include <git2.h>
 
-#include "chtype_buf_utilities.h"
 #include "window_commit.h"
 
 window_commit::window_commit(const git::repository &repo, const preferences &prefs, const git::commit &commit) :
