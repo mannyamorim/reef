@@ -20,7 +20,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#define GRAPH_MAX_WIDTH 128
+#define GRAPH_MAX_WIDTH 1024
 #define GRAPH_MAX_COLORS 6
 
 #include <curses.h>

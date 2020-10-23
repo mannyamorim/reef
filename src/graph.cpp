@@ -150,7 +150,7 @@ void graph_list::cleanup_empty_graph_right()
 	}
 }
 
-static void draw_merge_connection(unsigned char (&flags_buf)[GRAPH_MAX_WIDTH], unsigned char (&color_buf)[GRAPH_MAX_WIDTH], int index, unsigned char color)
+static void draw_merge_connection(std::vector<unsigned char> (&flags_buf), std::vector<unsigned char> (&color_buf), int index, unsigned char color)
 {
 	for (; (flags_buf[index] & G_MARK) == 0; index--) {
 		assert(index > 0);
@@ -251,81 +251,82 @@ size_t graph_list::compute_graph(commit_graph_info &graph, std::vector<char8_t> 
 
 	search_for_collapses();
 
-	unsigned char tmp[GRAPH_MAX_WIDTH];
-	unsigned char tmp_clr[GRAPH_MAX_WIDTH];
+	std::vector<unsigned char> flags_buf;
+	std::vector<unsigned char> color_buf;
 	size_t i = 0;
 
 	for (auto it = glist.begin(); it != glist.end(); it++) {
-		if (i >= sizeof(tmp))
+		if (i >= GRAPH_MAX_WIDTH)
 			throw std::out_of_range("max graph width reached (" STR(GRAPH_MAX_WIDTH) ")");
 
 		switch (it->status) {
 		case GRAPH_STATUS::OLD:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LOWER;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_UPPER | G_LOWER);
 			break;
 		case GRAPH_STATUS::COMMIT:
-			tmp_clr[i] = 0;
-			tmp[i++] = G_MARK;
+			color_buf.push_back(0);
+			flags_buf.push_back(G_MARK);
 			break;
 		case GRAPH_STATUS::COMMIT_INITIAL:
-			tmp_clr[i] = 0;
-			tmp[i++] = G_MARK | G_INITIAL;
+			color_buf.push_back(0);
+			flags_buf.push_back(G_MARK | G_INITIAL);
 			it->status = GRAPH_STATUS::EMPTY;
 			break;
 		case GRAPH_STATUS::MERGE_HEAD:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_LEFT;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_LOWER | G_LEFT);
 			it->status = GRAPH_STATUS::OLD;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+			draw_merge_connection(flags_buf, color_buf, i - 1, it->color);
 			break;
 		case GRAPH_STATUS::REM_MERGE:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_LEFT | G_UPPER;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_LOWER | G_LEFT | G_UPPER);
 			it->status = GRAPH_STATUS::OLD;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+			draw_merge_connection(flags_buf, color_buf, i - 1, it->color);
 			break;
 		case GRAPH_STATUS::REMOVED:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LEFT;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_UPPER | G_LEFT);
 			it->status = GRAPH_STATUS::EMPTY;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+			draw_merge_connection(flags_buf, color_buf, i - 1, it->color);
 			remove_color(it->color);
 			break;
 		case GRAPH_STATUS::CLPSE_BEG:
-			tmp_clr[i-1] = it->color;
-			tmp[i-1] = G_LEFT | G_RIGHT;
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LEFT;
+			color_buf[i-1] = it->color;
+			flags_buf[i-1] = G_LEFT | G_RIGHT;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_UPPER | G_LEFT);
 			it->status = GRAPH_STATUS::EMPTY;
 			break;
 		case GRAPH_STATUS::CLPSE_MID:
-			tmp_clr[i-1] = it->color;
-			tmp[i-1] = G_LEFT | G_RIGHT;
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LEFT | G_RIGHT;
+			color_buf[i-1] = it->color;
+			flags_buf[i-1] = G_LEFT | G_RIGHT;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_LEFT | G_RIGHT);
 			it->status = GRAPH_STATUS::EMPTY;
 			break;
 		case GRAPH_STATUS::CLPSE_END:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_RIGHT;
+			color_buf.push_back(it->color);
+			flags_buf.push_back(G_LOWER | G_RIGHT);
 			it->status = GRAPH_STATUS::OLD;
 			break;
 		case GRAPH_STATUS::EMPTY:
-			tmp_clr[i] = 0;
-			tmp[i++] = G_EMPTY;
+			color_buf.push_back(0);
+			flags_buf.push_back(G_EMPTY);
 			break;
 		}
 
-		tmp_clr[i] = 0;
-		tmp[i++] = G_EMPTY;
+		color_buf.push_back(0);
+		flags_buf.push_back(G_EMPTY);
+		i += 2;
 	}
 
 	cleanup_empty_graph_right();
 
 	for (int j = 0; j < i; j++) {
 		char8_t utf[4];
-		pack_runchar(utf, tmp_clr[j], true, tmp[j]);
+		pack_runchar(utf, color_buf[j], true, flags_buf[j]);
 		push_string_to_vec(buf, utf, 4);
 	}
 
