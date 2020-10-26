@@ -54,6 +54,9 @@ int graph_list::search_for_commit_index(commit_graph_info &graph)
 	int i = 0;
 
 	for (auto it = glist.begin(); it != glist.end(); it++) {
+		if (it->status == GRAPH_STATUS::EMPTY)
+			continue;
+
 		if (it->commit_list_branch_id == graph.id_of_commit) {
 			return i;
 		} else if (graph.duplicate_ids.count(it->commit_list_branch_id) > 0) {
