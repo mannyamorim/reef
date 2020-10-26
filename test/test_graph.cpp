@@ -522,3 +522,71 @@ TEST_F(graph_test_fxt, test_basic_collapse)
 		U"• ┌─┘ "
 	);
 }
+
+/* test double collapse
+ * •
+ * │ •
+ * │ │ •
+ * │ │ │ •
+ * •─┘ │ │
+ * • ┌─┘ │
+ * • │ ┌─┘
+ */
+TEST_F(graph_test_fxt, test_double_collapse)
+{
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		2,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		3,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		4,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ │ • "
+	);
+
+	run_graph_test(
+		{ 2 },	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"•─┘ │ │ "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• ┌─┘ │ "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• │ ┌─┘ "
+	);
+}
