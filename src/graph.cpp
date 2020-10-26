@@ -178,10 +178,10 @@ void graph_list::collapse_graph(std::vector<node>::iterator graph_node, bool nod
 
 			if (it->status == GRAPH_STATUS::EMPTY) {
 				empty_count++;
-			} else if (empty_count == 0) {
-				break;
 			} else if (it->status == GRAPH_STATUS::COMMIT) {
 				commit_found_left = true;
+				break;
+			} else {
 				break;
 			}
 		}
