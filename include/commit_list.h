@@ -43,8 +43,11 @@ struct commit_graph_info {
 
 class commit_list {
 public:
+	/* constructor */
+	commit_list(const ref_map &refs, const git::repository &repo);
+	
 	/* load a list of references into a git_commit_list to begin the display process */
-	commit_list(ref_map &refs, const git::repository &repo);
+	void initialize(const ref_map &refs, const git::repository &repo);
 
 	/* retrieve the latest commit from the git_commit_list */
 	git::commit get_next_commit(commit_graph_info &graph);

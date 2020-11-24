@@ -236,6 +236,13 @@ void graph_list::search_for_collapses()
 	}
 }
 
+void graph_list::initialize()
+{
+	for (unsigned char i = 0; i < GRAPH_MAX_COLORS; i++)
+		color_branches[i] = 0;
+	glist.clear();
+}
+
 size_t graph_list::compute_graph(commit_graph_info &graph, std::vector<char8_t> &buf)
 {
 	int graph_index = search_for_commit_index(graph);

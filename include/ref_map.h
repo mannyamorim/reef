@@ -61,9 +61,12 @@ public:
 		}
 	};
 
-	using refs_unordered_multimap = std::unordered_multimap<git_oid, git::reference, git_oid_ref_hash, git_oid_ref_cmp>;
-	refs_unordered_multimap refs, refs_inactive;
-	std::map<const char *, refs_unordered_multimap::iterator, char_ptr_cmp> refs_ordered;
+	using refs_unordered_multimap = std::unordered_multimap<git_oid, std::pair<git::reference, bool>, git_oid_ref_hash, git_oid_ref_cmp>;
+	refs_unordered_multimap refs;
+	using refs_ordered_map = std::map<const char *, std::pair<git_oid, std::pair<git::reference, bool> *>, char_ptr_cmp>;
+	refs_ordered_map refs_ordered;
+	
+	void set_ref_active(refs_ordered_map::iterator &iter, bool is_active);
 };
 
 #endif /* REFS_H */

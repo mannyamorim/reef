@@ -47,7 +47,7 @@ private:
 	const preferences &prefs;
 	ref_map refs;
 	scroll_window<git::commit> primary_window;
-	scroll_window<ref_map::refs_unordered_multimap::iterator> refs_window;
+	scroll_window<ref_map::refs_ordered_map::iterator> refs_window;
 	std::unordered_map<git_oid, int, git_oid_ref_hash, git_oid_ref_cmp> commit_id_line_map;
 
 	commit_list clist;

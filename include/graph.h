@@ -32,6 +32,7 @@
 
 class graph_list {
 public:
+	void initialize();
 	size_t compute_graph(commit_graph_info &graph, std::vector<char8_t> &buf);
 
 private:

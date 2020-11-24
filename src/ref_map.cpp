@@ -51,8 +51,9 @@ ref_map::ref_map(const git::repository &repo)
 		assert(id != NULL);
 
 		const char *shorthand = ref.shorthand();
-		auto res = refs.insert(std::make_pair(*id, std::move(ref)));
-		refs_ordered.insert(std::make_pair(shorthand, res));
+		std::pair<git::reference, bool> *pair_ref =
+			&refs.insert(std::make_pair(*id, std::make_pair(std::move(ref), true)))->second;
+		refs_ordered.insert(std::make_pair(shorthand, std::make_pair(*id, pair_ref)));
 
 		git_object_free(peeled_obj);
 
@@ -64,4 +65,9 @@ ref_map::~ref_map()
 {
 	refs_ordered.clear();
 	refs.clear();
+}
+
+void ref_map::set_ref_active(refs_ordered_map::iterator &iter, bool is_active)
+{
+	iter->second.second->second = is_active;
 }

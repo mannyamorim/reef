@@ -45,6 +45,10 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	if (refs.refs.count(*commit.id()) > 0) {
 		auto ref_range = refs.refs.equal_range(*commit.id());
 		for (auto &it = ref_range.first; it != ref_range.second; it++) {
+			if (!it->second.second)
+				/* ref is not active, don't show it */
+				continue;
+
 			constexpr char clr = 2;
 
 			char8_t utf[4];
@@ -52,7 +56,7 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 			push_string_to_vec(chbuf, utf, 4);
 
 			chbuf.push_back('[');
-			push_string_to_vec(chbuf, (char8_t *)it->second.shorthand());
+			push_string_to_vec(chbuf, (char8_t *)it->second.first.shorthand());
 			chbuf.push_back(']');
 
 			pack_runchar(utf, 0, 0, 0);
@@ -82,8 +86,8 @@ void window_main::display_commits(int max)
 
 void window_main::display_refs()
 {
-	for (auto it : refs.refs_ordered)
-		refs_window.add_line((char8_t *)it.first, strlen(it.first), it.second);
+	for (ref_map::refs_ordered_map::iterator it = refs.refs_ordered.begin(); it != refs.refs_ordered.end(); it++)
+		refs_window.add_line((char8_t *)it->first, strlen(it->first), it);
 }
 
 window_main::window_main(const git::repository &repo, const preferences &prefs) :
@@ -174,7 +178,7 @@ window_base::input_response window_main::process_key_input(int key)
 				int clicked_line = refs_window.get_current_line() + event.y;
 				refs_window.change_selected_line(clicked_line);
 
-				const git_oid &id = refs_window[(refs_window.get_selected_line())]->first;
+				const git_oid &id = refs_window[(refs_window.get_selected_line())]->second.first;
 				auto it = commit_id_line_map[id];
 				primary_window.change_current_and_selected_lines(it, it);
 
@@ -222,12 +226,32 @@ window_base::input_response window_main::process_key_input(int key)
 		return res;
 	case 'g':
 	{
-		const git_oid &id = refs_window[(refs_window.get_selected_line())]->first;
+		const git_oid &id = refs_window[(refs_window.get_selected_line())]->second.first;
 		auto it = commit_id_line_map[id];
 		primary_window.change_current_and_selected_lines(it, it);
 		primary_window.refresh();
 		return res;
 	}
+	case 'z':
+		refs.set_ref_active(refs_window[(refs_window.get_selected_line())], false);
+		primary_window.clear();
+		num_of_commits_loaded = 0;
+		clist.initialize(refs, repo);
+		glist.initialize();
+		commit_id_line_map.clear();
+		display_commits(INT_MAX);
+		primary_window.refresh();
+		return res;
+	case 'x':
+		refs.set_ref_active(refs_window[(refs_window.get_selected_line())], true);
+		primary_window.clear();
+		num_of_commits_loaded = 0;
+		clist.initialize(refs, repo);
+		glist.initialize();
+		commit_id_line_map.clear();
+		display_commits(INT_MAX);
+		primary_window.refresh();
+		return res;
 	case 'd':
 		res.type = input_response::type::OPEN_WINDOW;
 		res.window = std::make_shared<window_commit>(repo, prefs, primary_window[primary_window.get_selected_line()]);

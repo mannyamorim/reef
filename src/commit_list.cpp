@@ -67,28 +67,32 @@ bool commit_list::node::operator <(const node &node) const
 	return false;
 }
 
-commit_list::commit_list(ref_map &refs, const git::repository &repo)
+commit_list::commit_list(const ref_map &refs, const git::repository &repo)
+{
+	initialize(refs, repo);
+}
+
+
+void commit_list::initialize(const ref_map &refs, const git::repository &repo)
 {
 	if (refs.refs.empty())
 		return;
 
-	const auto add_ref = [this, &repo](const git_oid *id) {
-		node new_node(repo.commit_lookup(id), next_id++);
+	/* reset state */
+	next_id = 0;
+	clist.clear();
+
+	/* copy all of the refs that are active into a set */
+	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> refs_active;
+	for (auto &it : refs.refs)
+		if (it.second.second)
+			refs_active.insert(it.first);
+
+	/* load all of the unique refs into clist */
+	for (auto &it : refs_active) {
+		node new_node(repo.commit_lookup(&it), next_id++);
 		clist.push_back(std::move(new_node));
-	};
-
-	/* unordered_multimaps are guaranteed to have equivalent keys adjacent
-	to each other in the iterated order so we use two iterators to process
-	all of the unique keys in the multimap */
-	auto prev = refs.refs.cbegin();
-	auto curr = refs.refs.cbegin();
-	++curr;
-
-	add_ref(&prev->first);
-
-	for (; curr != refs.refs.cend(); ++prev, ++curr)
-		if (!refs.refs.key_eq()(curr->first, prev->first))
-			add_ref(&curr->first);
+	}
 
 	std::make_heap(clist.begin(), clist.end());
 }

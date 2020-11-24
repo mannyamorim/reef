@@ -116,8 +116,11 @@ public:
 
 		blocks.clear();
 		line_data.clear();
+		lines.clear();
 
 		add_block();
+		curr_block = 0;
+		block_usage = 0;
 
 		window.clear();
 
