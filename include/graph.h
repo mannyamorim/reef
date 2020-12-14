@@ -67,8 +67,8 @@ private:
 	size_t mark_graph_duplicates(commit_graph_info &graph);
 	void add_parents(size_t list_head_commit, const commit_graph_info &graph);
 	void cleanup_empty_graph_right();
-	void collapse_graph(std::vector<node>::iterator graph_node, bool node_is_commit);
-	void search_for_collapses();
+	void collapse_graph(int node_index, bool node_is_commit, int empty_count);
+	void search_for_collapses(int index_of_commit);
 };
 
 #endif /* GRAPH_H */

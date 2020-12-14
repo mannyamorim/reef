@@ -165,74 +165,59 @@ static void draw_merge_connection(std::vector<unsigned char> (&flags_buf), std::
 	}
 }
 
-void graph_list::collapse_graph(std::vector<node>::iterator graph_node, bool node_is_commit)
+void graph_list::collapse_graph(int node_index, bool node_is_commit, int empty_count)
 {
-	/* search for emtpy columns to the right */
-	int empty_count = 0;
-	bool commit_found_left = false;
-
-	{
-		auto it = graph_node;
-		while (it != glist.begin()) {
-			it--;
-
-			if (it->status == GRAPH_STATUS::EMPTY) {
-				empty_count++;
-			} else if (it->status == GRAPH_STATUS::COMMIT) {
-				commit_found_left = true;
-				break;
-			} else {
-				break;
-			}
-		}
-	}
-
 	if (empty_count == 0)
 		return;
 
-	if (commit_found_left || node_is_commit) {
-		/* if the commit is found to the left of the potential collapse
-		we need to search for any merges or duplicates to the right */
-		for (auto it = graph_node; it != glist.end(); it++) {
-			if (it->status == GRAPH_STATUS::MERGE_HEAD
-					|| it->status == GRAPH_STATUS::REM_MERGE
-					|| it->status == GRAPH_STATUS::REMOVED) {
-				/* ineligible for collapse */
-				return;
-			}
-		}
+	/* perform actual collapse */
+	glist[node_index].status = GRAPH_STATUS::CLPSE_BEG;
+
+	int i;
+	for (i = node_index - 1; i > node_index - empty_count; i--) {
+		glist[i].status = GRAPH_STATUS::CLPSE_MID;
+		glist[i].color = glist[node_index].color;
 	}
 
-	{
-		/* perform actual collapse */
-		graph_node->status = GRAPH_STATUS::CLPSE_BEG;
+	glist[i].commit_list_branch_id = glist[node_index].commit_list_branch_id;
+	glist[i].color = glist[node_index].color;
 
-		auto it = graph_node;
-		it--;
-
-		for (int i = 0; i < empty_count - 1; i++) {
-			it->status = GRAPH_STATUS::CLPSE_MID;
-			it->color = graph_node->color;
-			it--;
-		}
-
-		it->commit_list_branch_id = graph_node->commit_list_branch_id;
-		it->color = graph_node->color;
-
-		if (node_is_commit)
-			it->status = GRAPH_STATUS::COMMIT;
-		else
-			it->status = GRAPH_STATUS::CLPSE_END;
-	}
+	if (node_is_commit)
+		glist[i].status = GRAPH_STATUS::COMMIT;
+	else
+		glist[i].status = GRAPH_STATUS::CLPSE_END;
 }
 
-void graph_list::search_for_collapses()
+void graph_list::search_for_collapses(int index_of_commit)
 {
-	for (auto it = glist.begin(); it != glist.end(); it++) {
-		if (it->status == GRAPH_STATUS::OLD)
-			collapse_graph(it, false);
-		else if (it->status == GRAPH_STATUS::COMMIT)
-			collapse_graph(it, true);
+	/* the region from index_of_commit to region_end is a line of merges where we cannot draw collapses */
+	int region_end = -1;
+
+	for (int i = 0; i < glist.size(); i++)
+		if (glist[i].status == GRAPH_STATUS::MERGE_HEAD
+				|| glist[i].status == GRAPH_STATUS::REM_MERGE
+				|| glist[i].status == GRAPH_STATUS::REMOVED)
+			/* we found another merge */
+			region_end = i;
+
+	int collapse_length = 0;
+	for (int i = 0; i < glist.size(); i++) {
+		if (i >= index_of_commit && i <= region_end) {
+			collapse_length = 0;
+			continue;
+		}
+
+		if (glist[i].status == GRAPH_STATUS::EMPTY) {
+			collapse_length++;
+		} else if (glist[i].status == GRAPH_STATUS::OLD) {
+			collapse_graph(i, false, collapse_length);
+			collapse_length = 0;
+		} else if (glist[i].status == GRAPH_STATUS::COMMIT) {
+			collapse_graph(i, true, collapse_length);
+			collapse_length = 0;
+		} else {
+			collapse_length = 0;
+		}
 	}
 }
 
@@ -253,13 +238,14 @@ size_t graph_list::compute_graph(commit_graph_info &graph, std::vector<char8_t> 
 		node.status = GRAPH_STATUS::NEW_HEAD;
 		node.color = get_next_color();
 		glist.push_back(node);
+		graph_index = glist.size();
 	}
 
 	size_t list_head_commit = mark_graph_duplicates(graph);
 
 	add_parents(list_head_commit, graph);
 
-	search_for_collapses();
+	search_for_collapses(graph_index);
 
 	std::vector<unsigned char> flags_buf;
 	std::vector<unsigned char> color_buf;

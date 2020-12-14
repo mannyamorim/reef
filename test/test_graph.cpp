@@ -590,3 +590,189 @@ TEST_F(graph_test_fxt, test_double_collapse)
 		U"• │ ┌─┘ "
 	);
 }
+
+/* test long collapse
+ * •
+ * │ •
+ * │ │ •
+ * │ │ │ •
+ * •─┴─┘ │
+ * • ┌───┘
+ */
+TEST_F(graph_test_fxt, test_long_collapse)
+{
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		2,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		3,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		4,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ │ • "
+	);
+
+	run_graph_test(
+		{ 2, 3 },	/* duplicate_ids */
+		{},		/* new_parent_ids */
+		1,		/* id_of_commit */
+		1,		/* num_parents */
+		U"•─┴─┘ │ "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• ┌───┘ "
+	);
+}
+
+/* test commit collapse
+ * •
+ * │ •
+ * │ │ •
+ * │ │ │ •
+ * •─┴─┘ │
+ * │ •───┘
+ */
+TEST_F(graph_test_fxt, test_commit_collapse)
+{
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		2,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		3,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		4,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ │ • "
+	);
+
+	run_graph_test(
+		{ 2, 3 },	/* duplicate_ids */
+		{},		/* new_parent_ids */
+		1,		/* id_of_commit */
+		1,		/* num_parents */
+		U"•─┴─┘ │ "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		4,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ •───┘ "
+	);
+}
+
+/* test blocked collapse
+ * •
+ * │ •
+ * │ │ •
+ * │ │ │ •
+ * •─┘ │ │
+ * •───│─┘
+ * • ┌─┘
+ */
+TEST_F(graph_test_fxt, test_blocked_collapse)
+{
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		2,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		3,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ • "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		4,	/* id_of_commit */
+		1,	/* num_parents */
+		U"│ │ │ • "
+	);
+
+	run_graph_test(
+		{ 2 },	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"•─┘ │ │ "
+	);
+
+	run_graph_test(
+		{ 4 },	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"•───│─┘ "
+	);
+
+	run_graph_test(
+		{},	/* duplicate_ids */
+		{},	/* new_parent_ids */
+		1,	/* id_of_commit */
+		1,	/* num_parents */
+		U"• ┌─┘ "
+	);
+}
