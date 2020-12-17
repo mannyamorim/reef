@@ -59,7 +59,7 @@ class graph_test_fxt : public testing::Test
 {
 protected:
 	graph_list glist;
-	std::vector<char8_t> buf;
+	char8_t buf[MAX_LINE_LENGTH];
 	utf8proc_int32_t codepoints[1024];
 
 	void run_graph_test(
@@ -75,11 +75,10 @@ protected:
 		graph_info.id_of_commit = id_of_commit;
 		graph_info.num_parents = num_parents;
 
-		buf.clear();
-		glist.compute_graph(graph_info, buf);
+		size_t graph_size = glist.compute_graph(graph_info, buf);
 
 		/* decode the UTF8 into UTF32 codepoints */
-		size_t codepoints_decoded = utf8proc_decompose(buf.data(), buf.size(), codepoints, 1024, UTF8PROC_COMPOSE);
+		size_t codepoints_decoded = utf8proc_decompose(buf, graph_size, codepoints, 1024, UTF8PROC_COMPOSE);
 
 		for (size_t i = 0; i < codepoints_decoded; i++) {
 			if (codepoints[i] >= 0x100000) {

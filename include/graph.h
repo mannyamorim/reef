@@ -20,7 +20,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#define GRAPH_MAX_WIDTH 1024
 #define GRAPH_MAX_COLORS 6
 
 #include <curses.h>
@@ -29,11 +28,12 @@
 
 #include "commit_list.h"
 #include "reef_string.h"
+#include "scroll_window.h"
 
 class graph_list {
 public:
 	void initialize();
-	size_t compute_graph(commit_graph_info &graph, std::vector<char8_t> &buf);
+	size_t compute_graph(commit_graph_info &graph, char8_t (&buf)[MAX_LINE_LENGTH]);
 
 private:
 	enum class GRAPH_STATUS : char {

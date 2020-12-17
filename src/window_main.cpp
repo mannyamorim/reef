@@ -21,6 +21,7 @@
 #include <git2.h>
 
 #include "commit_list.h"
+#include "reef_string.h"
 #include "ref_map.h"
 #include "scroll_window.h"
 #include "graph.h"
@@ -38,9 +39,9 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	char time_buf[20];
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", author_time);
 
-	std::vector<char8_t> chbuf;
+	char8_t chbuf[MAX_LINE_LENGTH];
 
-	size_t graph_size = graph_list.compute_graph(graph, chbuf);
+	size_t i = graph_list.compute_graph(graph, chbuf);
 
 	if (refs.refs.count(*commit.id()) > 0) {
 		auto ref_range = refs.refs.equal_range(*commit.id());
@@ -51,26 +52,25 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 
 			constexpr char clr = 2;
 
-			char8_t utf[4];
-			pack_runchar(utf, clr, 0, 0);
-			push_string_to_vec(chbuf, utf, 4);
+			pack_runchar(reinterpret_cast<char8_t (&)[4]>(chbuf[i]), clr, 0, 0);
+			i+=4;
 
-			chbuf.push_back('[');
-			push_string_to_vec(chbuf, (char8_t *)it->second.first.shorthand());
-			chbuf.push_back(']');
+			add_str_to_buf(chbuf, "[", i);
+			add_str_to_buf(chbuf, it->second.first.shorthand(), i);
+			add_str_to_buf(chbuf, "]", i);
 
-			pack_runchar(utf, 0, 0, 0);
-			push_string_to_vec(chbuf, utf, 4);
+			pack_runchar(reinterpret_cast<char8_t (&)[4]>(chbuf[i]), 0, 0, 0);
+			i+=4;
 
-			chbuf.push_back(' ');
+			add_str_to_buf(chbuf, " ", i);
 		}
 	}
 
-	push_string_to_vec(chbuf, (char8_t *)time_buf);
-	chbuf.push_back(' ');
-	push_string_to_vec(chbuf, (char8_t *)commit.summary());
+	add_str_to_buf(chbuf, time_buf, i);
+	add_str_to_buf(chbuf, " ", i);
+	add_str_to_buf(chbuf, commit.summary(), i);
 
-	swin.add_line(chbuf.data(), chbuf.size(), std::move(commit));
+	swin.add_line(chbuf, i, std::move(commit));
 }
 
 void window_main::display_commits(int max)

@@ -80,6 +80,25 @@ static inline void push_string_to_vec(std::vector<char8_t> &buf, const char8_t s
 		buf.push_back(str[i]);
 }
 
+
+/* appends the string str to the buffer buf with size n at the position i updating i to the next available position */
+template<size_t BUF_SIZE>
+static inline void add_str_to_buf(char8_t(&buf)[BUF_SIZE], const char str[], size_t &i)
+{
+	size_t j = 0;
+	for (; i < BUF_SIZE && str[j] != '\0'; ++i, ++j)
+		buf[i] = str[j];
+}
+
+/* appends the string str with size n to the buffer buf with size n at the position i updating i to the next available position */
+template<size_t BUF_SIZE>
+static inline void add_str_to_buf(char8_t(&buf)[BUF_SIZE], const char str[], size_t n, size_t &i)
+{
+	size_t j = 0;
+	for (; i < BUF_SIZE && j < n; ++i, ++j)
+		buf[i] = str[j];
+}
+
 static inline void pack_cchar_t(cchar_t *cchar, const char32_t *str, const attr_t attrs, const short color_pair)
 {
 #ifdef PDCURSES

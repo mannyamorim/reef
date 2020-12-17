@@ -31,6 +31,8 @@
 #include "cpp_curses.h"
 #include "reef_string.h"
 
+#define MAX_LINE_LENGTH 8192
+
 template <typename T>
 class scroll_window
 {
@@ -266,8 +268,6 @@ private:
 	std::vector<std::unique_ptr<char8_t[]>> blocks;
 	std::vector<std::pair<char8_t *, int>> lines;
 	std::vector<T> line_data;
-
-	const int MAX_LINE_LENGTH = 1024;
 
 	std::unique_ptr<cchar_t[]> tmp_line_buf;
 	std::unique_ptr<utf8proc_int32_t[]> tmp_codepoint_buf;
