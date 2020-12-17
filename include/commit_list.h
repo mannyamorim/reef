@@ -39,13 +39,15 @@ struct commit_graph_info {
 	unsigned int id_of_commit;
 	/* the number of parents of the commit returned */
 	unsigned int num_parents;
+	/* the number of duplicate ids */
+	unsigned int num_duplicates;
 };
 
 class commit_list {
 public:
 	/* constructor */
 	commit_list(const ref_map &refs, const git::repository &repo);
-	
+
 	/* load a list of references into a git_commit_list to begin the display process */
 	void initialize(const ref_map &refs, const git::repository &repo);
 

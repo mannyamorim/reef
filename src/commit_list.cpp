@@ -101,12 +101,15 @@ void commit_list::initialize(const ref_map &refs, const git::repository &repo)
  * duplicates array in the commit_graph_info structure */
 void commit_list::remove_duplicates(const git_oid *latest_commit_oid, commit_graph_info &graph)
 {
+	graph.num_duplicates = 0;
+
 	/* iterate and look for duplicates and remove them */
 	while (!clist.empty()) {
 		node &node = clist.front();
 		if (node == latest_commit_oid) {
 			/* mark the index of the duplicate in the graph list */
 			graph.duplicate_ids.insert(node.id);
+			graph.num_duplicates++;
 
 			/* we found a duplicate so delete the commit */
 			std::pop_heap(clist.begin(), clist.end());

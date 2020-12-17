@@ -95,10 +95,13 @@ size_t graph_list::mark_graph_duplicates(commit_graph_info &graph)
 			continue;
 		}
 
-		if (graph.duplicate_ids.count(it->commit_list_branch_id) > 0)
+		if (graph.num_duplicates > 0 && graph.duplicate_ids.count(it->commit_list_branch_id) > 0) {
 			it->status = GRAPH_STATUS::REMOVED;
-		else
-			it->status = GRAPH_STATUS::OLD;
+			graph.num_duplicates--;
+			continue;
+		}
+
+		it->status = GRAPH_STATUS::OLD;
 	}
 
 	assert(found_commit);

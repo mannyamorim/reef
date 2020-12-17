@@ -74,6 +74,7 @@ protected:
 		graph_info.new_parent_ids = std::move(new_parent_ids);
 		graph_info.id_of_commit = id_of_commit;
 		graph_info.num_parents = num_parents;
+		graph_info.num_duplicates = graph_info.duplicate_ids.size();
 
 		size_t graph_size = glist.compute_graph(graph_info, buf);
 
