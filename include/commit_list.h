@@ -60,8 +60,9 @@ private:
 	struct node {
 		git::commit commit;
 		unsigned int id;
+		git_time_t time;
 
-		node(git::commit &&commit, unsigned int id);
+		node(git::commit &&commit, unsigned int id, git_time_t time);
 		node(const node &) = delete;
 		node &operator=(const node &) = delete;
 		node(node &&other) noexcept;

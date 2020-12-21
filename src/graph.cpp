@@ -258,69 +258,87 @@ size_t graph_list::compute_graph(commit_graph_info &graph, char8_t (&buf)[MAX_LI
 	size_t i = 0;
 
 	for (auto it = glist.begin(); it != glist.end(); it++) {
-		if (i >= GRAPH_MAX_WIDTH)
-			throw std::out_of_range("max graph width reached (" STR(GRAPH_MAX_WIDTH) ")");
+		if (i < GRAPH_MAX_WIDTH) {
+			switch (it->status) {
+			case GRAPH_STATUS::OLD:
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_UPPER | G_LOWER;
+				break;
+			case GRAPH_STATUS::COMMIT:
+				tmp_clr[i] = 0;
+				tmp[i++] = G_MARK;
+				break;
+			case GRAPH_STATUS::COMMIT_INITIAL:
+				tmp_clr[i] = 0;
+				tmp[i++] = G_MARK | G_INITIAL;
+				it->status = GRAPH_STATUS::EMPTY;
+				break;
+			case GRAPH_STATUS::MERGE_HEAD:
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_LOWER | G_LEFT;
+				it->status = GRAPH_STATUS::OLD;
+				draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+				break;
+			case GRAPH_STATUS::REM_MERGE:
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_LOWER | G_LEFT | G_UPPER;
+				it->status = GRAPH_STATUS::OLD;
+				draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+				break;
+			case GRAPH_STATUS::REMOVED:
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_UPPER | G_LEFT;
+				it->status = GRAPH_STATUS::EMPTY;
+				draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
+				remove_color(it->color);
+				break;
+			case GRAPH_STATUS::CLPSE_BEG:
+				tmp_clr[i-1] = it->color;
+				tmp[i-1] = G_LEFT | G_RIGHT;
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_UPPER | G_LEFT;
+				it->status = GRAPH_STATUS::EMPTY;
+				break;
+			case GRAPH_STATUS::CLPSE_MID:
+				tmp_clr[i-1] = it->color;
+				tmp[i-1] = G_LEFT | G_RIGHT;
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_LEFT | G_RIGHT;
+				it->status = GRAPH_STATUS::EMPTY;
+				break;
+			case GRAPH_STATUS::CLPSE_END:
+				tmp_clr[i] = it->color;
+				tmp[i++] = G_LOWER | G_RIGHT;
+				it->status = GRAPH_STATUS::OLD;
+				break;
+			case GRAPH_STATUS::EMPTY:
+				tmp_clr[i] = 0;
+				tmp[i++] = G_EMPTY;
+				break;
+			}
 
-		switch (it->status) {
-		case GRAPH_STATUS::OLD:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LOWER;
-			break;
-		case GRAPH_STATUS::COMMIT:
-			tmp_clr[i] = 0;
-			tmp[i++] = G_MARK;
-			break;
-		case GRAPH_STATUS::COMMIT_INITIAL:
-			tmp_clr[i] = 0;
-			tmp[i++] = G_MARK | G_INITIAL;
-			it->status = GRAPH_STATUS::EMPTY;
-			break;
-		case GRAPH_STATUS::MERGE_HEAD:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_LEFT;
-			it->status = GRAPH_STATUS::OLD;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
-			break;
-		case GRAPH_STATUS::REM_MERGE:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_LEFT | G_UPPER;
-			it->status = GRAPH_STATUS::OLD;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
-			break;
-		case GRAPH_STATUS::REMOVED:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LEFT;
-			it->status = GRAPH_STATUS::EMPTY;
-			draw_merge_connection(tmp, tmp_clr, i - 2, it->color);
-			remove_color(it->color);
-			break;
-		case GRAPH_STATUS::CLPSE_BEG:
-			tmp_clr[i-1] = it->color;
-			tmp[i-1] = G_LEFT | G_RIGHT;
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_UPPER | G_LEFT;
-			it->status = GRAPH_STATUS::EMPTY;
-			break;
-		case GRAPH_STATUS::CLPSE_MID:
-			tmp_clr[i-1] = it->color;
-			tmp[i-1] = G_LEFT | G_RIGHT;
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LEFT | G_RIGHT;
-			it->status = GRAPH_STATUS::EMPTY;
-			break;
-		case GRAPH_STATUS::CLPSE_END:
-			tmp_clr[i] = it->color;
-			tmp[i++] = G_LOWER | G_RIGHT;
-			it->status = GRAPH_STATUS::OLD;
-			break;
-		case GRAPH_STATUS::EMPTY:
 			tmp_clr[i] = 0;
 			tmp[i++] = G_EMPTY;
-			break;
+		} else {
+			switch (it->status) {
+			case GRAPH_STATUS::MERGE_HEAD:
+			case GRAPH_STATUS::REM_MERGE:
+			case GRAPH_STATUS::CLPSE_END:
+				it->status = GRAPH_STATUS::OLD;
+				break;
+			case GRAPH_STATUS::REMOVED:
+				remove_color(it->color);
+			case GRAPH_STATUS::COMMIT_INITIAL:
+			case GRAPH_STATUS::CLPSE_BEG:
+			case GRAPH_STATUS::CLPSE_MID:
+				it->status = GRAPH_STATUS::EMPTY;
+				break;
+			case GRAPH_STATUS::OLD:
+			case GRAPH_STATUS::COMMIT:
+			case GRAPH_STATUS::EMPTY:
+				break;
+			}
 		}
-
-		tmp_clr[i] = 0;
-		tmp[i++] = G_EMPTY;
 	}
 
 	cleanup_empty_graph_right();

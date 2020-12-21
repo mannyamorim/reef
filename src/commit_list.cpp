@@ -26,20 +26,23 @@
 #include "ref_map.h"
 #include "cpp_git.h"
 
-commit_list::node::node(git::commit &&commit, unsigned int id) :
+commit_list::node::node(git::commit &&commit, unsigned int id, git_time_t time) :
 	commit(std::move(commit)),
-	id(id)
+	id(id),
+	time(time)
 {}
 
 commit_list::node::node(node &&other) noexcept :
 	commit(std::move(other.commit)),
-	id(other.id)
+	id(other.id),
+	time(other.time)
 {}
 
 commit_list::node &commit_list::node::node::operator=(node &&other) noexcept
 {
 	commit = std::move(other.commit);
 	id = other.id;
+	time = other.time;
 	return *this;
 }
 
@@ -51,13 +54,10 @@ bool commit_list::node::operator==(const git_oid *node_oid) const
 
 bool commit_list::node::operator <(const node &node) const
 {
-	const git_time_t this_time = commit.time();
-	const git_time_t node_time = node.commit.time();
-
-	if (this_time < node_time)
+	if (time < node.time)
 		return true;
 
-	if (this_time == node_time) {
+	if (time == node.time) {
 		const git_oid *this_oid = commit.id();
 		const git_oid *node_oid = node.commit.id();
 		if (git_oid_cmp(this_oid, node_oid) > 0)
@@ -90,7 +90,9 @@ void commit_list::initialize(const ref_map &refs, const git::repository &repo)
 
 	/* load all of the unique refs into clist */
 	for (auto &it : refs_active) {
-		node new_node(repo.commit_lookup(&it), next_id++);
+		git::commit commit = repo.commit_lookup(&it);
+		git_time_t time = commit.time();
+		node new_node(std::move(commit), next_id++, time);
 		clist.push_back(std::move(new_node));
 	}
 
@@ -123,15 +125,25 @@ void commit_list::remove_duplicates(const git_oid *latest_commit_oid, commit_gra
 void commit_list::insert_parents(const node &latest_node, commit_graph_info &graph)
 {
 	if (graph.num_parents > 0) {
+		git::commit parent = latest_node.commit.parent(0);
+		git_time_t parent_time = parent.time();
+		if (parent_time >= latest_node.time)
+			parent_time = latest_node.time - 1;
+
 		/* set the first parent to have the same id as the child */
-		node new_node(latest_node.commit.parent(0), latest_node.id);
+		node new_node(std::move(parent), latest_node.id, parent_time);
 		clist.push_back(std::move(new_node));
 		std::push_heap(clist.begin(), clist.end());
 	}
 
 	for (int i = 1; i < graph.num_parents; i++) {
+		git::commit parent = latest_node.commit.parent(i);
+		git_time_t parent_time = parent.time();
+		if (parent_time >= latest_node.time)
+			parent_time = latest_node.time - 1;
+
 		/* give every additional parent a newly generated id */
-		node new_node(latest_node.commit.parent(i), next_id++);
+		node new_node(std::move(parent), next_id++, parent_time);
 		clist.push_back(std::move(new_node));
 		std::push_heap(clist.begin(), clist.end());
 
