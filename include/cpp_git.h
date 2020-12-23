@@ -145,7 +145,7 @@ namespace git
 
 		tree(const tree &) = delete;
 		tree &operator=(const tree &) = delete;
-		
+
 		tree(tree &&other) noexcept
 		{
 			ptr = other.ptr;
@@ -185,8 +185,31 @@ namespace git
 	public:
 		commit(git_commit *ptr) : ptr(ptr) {}
 
-		commit(const commit &old_commit) = delete;
-		commit &operator=(const commit &other) = delete;
+		commit(const commit &other)
+		{
+			git_commit *commit = nullptr;
+			int err = git_commit_dup(&commit, other.ptr);
+			if (err != 0)
+				throw libgit_error(err);
+			ptr = commit;
+		}
+
+		commit &operator=(const commit &other)
+		{
+			if (this != &other) {
+				git_commit *commit = nullptr;
+				int err = git_commit_dup(&commit, other.ptr);
+				if (err != 0)
+					throw libgit_error(err);
+
+				if (ptr != nullptr)
+					git_commit_free(ptr);
+
+				ptr = commit;
+			}
+
+			return *this;
+		}
 
 		commit(commit &&other) noexcept
 		{
@@ -231,6 +254,11 @@ namespace git
 		unsigned int parentcount() const
 		{
 			return git_commit_parentcount(ptr);
+		}
+
+		const git_oid *parent_id(unsigned int n) const
+		{
+			return git_commit_parent_id(ptr, n);
 		}
 
 		const git_signature *author() const
@@ -290,7 +318,7 @@ namespace git
 				ptr = other.ptr;
 				other.ptr = nullptr;
 			}
-			
+
 			return *this;
 		}
 
@@ -314,7 +342,7 @@ namespace git
 		{
 			return git_reference_is_tag(ptr);
 		}
-		
+
 		git::reference resolve() const
 		{
 			git_reference *resolved_ref;
@@ -450,7 +478,7 @@ namespace git
 			bool end = false;
 			git::reference ref;
 			git_reference_iterator *ptr;
-			
+
 		};
 
 		reference_iterator get_reference_iterator() const
@@ -462,7 +490,7 @@ namespace git
 
 			return reference_iterator(iter);
 		}
-		
+
 		static std::string discover(const char *start_path)
 		{
 			git_buf repo_path = GIT_BUF_INIT_CONST(nullptr, 0);

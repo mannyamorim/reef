@@ -67,13 +67,96 @@ bool commit_list::node::operator <(const node &node) const
 	return false;
 }
 
-commit_list::commit_list(const ref_map &refs, const git::repository &repo)
+commit_list::graph_node::graph_node(git::commit && commit, git_time_t time, size_t depth) :
+	commit(std::move(commit)),
+	time(time),
+	depth(depth)
+{}
+
+commit_list::graph_node::graph_node(graph_node &&other) noexcept :
+	commit(std::move(other.commit)),
+	time(other.time),
+	depth(other.depth),
+	parents(std::move(other.parents)),
+	children(std::move(other.children))
+{}
+
+commit_list::graph_node &commit_list::graph_node::operator=(graph_node &&other) noexcept
 {
-	initialize(refs, repo);
+	commit = std::move(other.commit);
+	time = other.time;
+	depth = other.depth;
+	parents = std::move(other.parents);
+	children = std::move(other.children);
+	return *this;
 }
 
+commit_list::commit_list(const ref_map &refs, const git::repository &repo) :
+	repo(repo)
+{
+	initialize(refs);
+	bfs();
+}
 
-void commit_list::initialize(const ref_map &refs, const git::repository &repo)
+void commit_list::bfs()
+{
+	while (!bfs_queue.empty()) {
+		graph_node *node = bfs_queue.front();
+		bfs_queue.pop_front();
+
+		git_time_t max_parent_time = 0;
+
+		for (unsigned int i = 0; i < node->commit.parentcount(); i++) {
+			const git_oid *parent_id = node->commit.parent_id(i);
+			git_time_t parent_time;
+			if (commits_visited.count(*parent_id) == 0) {
+				/* load parent */
+				git::commit parent = node->commit.parent(i);
+				parent_time = parent.time();
+
+				/* mark parent as visited */
+				commits_visited.insert(*parent_id);
+
+				/* add parent to the queue */
+				graph_node new_graph_node(std::move(parent), parent_time, node->depth + 1);
+				auto ret = commits_loaded.insert(std::make_pair(*parent_id, std::move(new_graph_node)));
+				bfs_queue.push_back(&ret.first->second);
+
+				/* add pointer from child to parent */
+				node->parents.push_back(&ret.first->second);
+
+				/* add pointer from parent to child */
+				ret.first->second.children.push_back(node);
+			} else {
+				/* find parent */
+				graph_node *parent = &commits_loaded.find(*parent_id)->second;
+				parent_time = parent->time;
+
+				/* add pointer from child to parent */
+				node->parents.push_back(parent);
+
+				/* add pointer from parent to child */
+				parent->children.push_back(node);
+			}
+
+			if (parent_time > max_parent_time)
+				max_parent_time = parent_time;
+		}
+
+		if (max_parent_time >= node->time)
+			fix_commit_times(node, max_parent_time);
+	}
+}
+
+void commit_list::fix_commit_times(graph_node *node, const git_time_t parent_time)
+{
+	node->time = parent_time + 1;
+	for (graph_node *child : node->children)
+		if (child->time <= parent_time + 1)
+			fix_commit_times(child, parent_time + 1);
+}
+
+void commit_list::initialize(const ref_map &refs)
 {
 	if (refs.refs.empty())
 		return;
@@ -88,12 +171,18 @@ void commit_list::initialize(const ref_map &refs, const git::repository &repo)
 		if (it.second.second)
 			refs_active.insert(it.first);
 
-	/* load all of the unique refs into clist */
+	/* load all of the unique refs into clist and bfs_queue */
 	for (auto &it : refs_active) {
 		git::commit commit = repo.commit_lookup(&it);
+		git::commit commit_copy = commit;
 		git_time_t time = commit.time();
+
 		node new_node(std::move(commit), next_id++, time);
 		clist.push_back(std::move(new_node));
+
+		graph_node new_graph_node(std::move(commit_copy), time, 0);
+		auto ret = commits_loaded.insert(std::make_pair(*&it, std::move(new_graph_node)));
+		bfs_queue.push_back(&ret.first->second);
 	}
 
 	std::make_heap(clist.begin(), clist.end());

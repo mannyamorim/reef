@@ -22,6 +22,7 @@
 
 #include <git2.h>
 
+#include <list>
 #include <unordered_set>
 #include <vector>
 
@@ -49,7 +50,7 @@ public:
 	commit_list(const ref_map &refs, const git::repository &repo);
 
 	/* load a list of references into a git_commit_list to begin the display process */
-	void initialize(const ref_map &refs, const git::repository &repo);
+	void initialize(const ref_map &refs);
 
 	/* retrieve the latest commit from the git_commit_list */
 	git::commit get_next_commit(commit_graph_info &graph);
@@ -72,11 +73,33 @@ private:
 		bool operator <(const node &node) const;
 	};
 
+	struct graph_node {
+		git::commit commit;
+		git_time_t time;
+		size_t depth;
+
+		std::vector<graph_node *> parents;
+		std::vector<graph_node *> children;
+
+		graph_node(git::commit &&commit, git_time_t time, size_t depth);
+		graph_node(const graph_node &) = delete;
+		graph_node &operator=(const graph_node &) = delete;
+		graph_node(graph_node &&) noexcept;
+		graph_node &operator=(graph_node &&) noexcept;
+	};
+
+	const git::repository &repo;
 	unsigned int next_id = 0;
 	std::vector<node> clist;
+	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> commits_visited;
+	std::unordered_map<git_oid, graph_node, git_oid_ref_hash, git_oid_ref_cmp> commits_loaded;
+	std::list<graph_node *> bfs_queue;
 
 	void remove_duplicates(const git_oid *latest_commit_oid, commit_graph_info &graph);
 	void insert_parents(const node &latest_node, commit_graph_info &graph);
+
+	void bfs();
+	void fix_commit_times(graph_node *node, const git_time_t parent_time);
 };
 
 #endif /* COMMIT_LIST_H */

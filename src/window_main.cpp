@@ -236,7 +236,7 @@ window_base::input_response window_main::process_key_input(int key)
 		refs.set_ref_active(refs_window[(refs_window.get_selected_line())], false);
 		primary_window.clear();
 		num_of_commits_loaded = 0;
-		clist.initialize(refs, repo);
+		clist.initialize(refs);
 		glist.initialize();
 		commit_id_line_map.clear();
 		display_commits(INT_MAX);
@@ -246,7 +246,7 @@ window_base::input_response window_main::process_key_input(int key)
 		refs.set_ref_active(refs_window[(refs_window.get_selected_line())], true);
 		primary_window.clear();
 		num_of_commits_loaded = 0;
-		clist.initialize(refs, repo);
+		clist.initialize(refs);
 		glist.initialize();
 		commit_id_line_map.clear();
 		display_commits(INT_MAX);
