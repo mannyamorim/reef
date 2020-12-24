@@ -26,40 +26,37 @@
 #include "ref_map.h"
 #include "cpp_git.h"
 
-commit_list::node::node(git::commit &&commit, unsigned int id, git_time_t time) :
-	commit(std::move(commit)),
-	id(id),
-	time(time)
+commit_list::node::node(graph_node *graph_node_ptr, unsigned int id) :
+	graph_node_ptr(graph_node_ptr),
+	id(id)
 {}
 
 commit_list::node::node(node &&other) noexcept :
-	commit(std::move(other.commit)),
-	id(other.id),
-	time(other.time)
+	graph_node_ptr(other.graph_node_ptr),
+	id(other.id)
 {}
 
 commit_list::node &commit_list::node::node::operator=(node &&other) noexcept
 {
-	commit = std::move(other.commit);
+	graph_node_ptr = other.graph_node_ptr;
 	id = other.id;
-	time = other.time;
 	return *this;
 }
 
 bool commit_list::node::operator==(const git_oid *node_oid) const
 {
-	const git_oid *this_oid = commit.id();
+	const git_oid *this_oid = graph_node_ptr->commit.id();
 	return git_oid_equal(this_oid, node_oid);
 }
 
 bool commit_list::node::operator <(const node &node) const
 {
-	if (time < node.time)
+	if (graph_node_ptr->time < node.graph_node_ptr->time)
 		return true;
 
-	if (time == node.time) {
-		const git_oid *this_oid = commit.id();
-		const git_oid *node_oid = node.commit.id();
+	if (graph_node_ptr->time == node.graph_node_ptr->time) {
+		const git_oid *this_oid = graph_node_ptr->commit.id();
+		const git_oid *node_oid = graph_node_ptr->commit.id();
 		if (git_oid_cmp(this_oid, node_oid) > 0)
 			return true;
 	}
@@ -67,10 +64,12 @@ bool commit_list::node::operator <(const node &node) const
 	return false;
 }
 
-commit_list::graph_node::graph_node(git::commit && commit, git_time_t time, size_t depth) :
+commit_list::graph_node::graph_node(git::commit &&commit, git_time_t time, size_t depth) :
 	commit(std::move(commit)),
 	time(time),
-	depth(depth)
+	depth(depth),
+	parents(),
+	children()
 {}
 
 commit_list::graph_node::graph_node(graph_node &&other) noexcept :
@@ -95,7 +94,6 @@ commit_list::commit_list(const ref_map &refs, const git::repository &repo) :
 	repo(repo)
 {
 	initialize(refs);
-	bfs();
 }
 
 void commit_list::bfs()
@@ -119,7 +117,7 @@ void commit_list::bfs()
 
 				/* add parent to the queue */
 				graph_node new_graph_node(std::move(parent), parent_time, node->depth + 1);
-				auto ret = commits_loaded.insert(std::make_pair(*parent_id, std::move(new_graph_node)));
+				auto ret = commits_loaded.emplace(*parent_id, std::move(new_graph_node));
 				bfs_queue.push_back(&ret.first->second);
 
 				/* add pointer from child to parent */
@@ -152,7 +150,7 @@ void commit_list::fix_commit_times(graph_node *node, const git_time_t parent_tim
 {
 	node->time = parent_time + 1;
 	for (graph_node *child : node->children)
-		if (child->time <= parent_time + 1)
+		if (parent_time + 1 > child->time)
 			fix_commit_times(child, parent_time + 1);
 }
 
@@ -171,18 +169,27 @@ void commit_list::initialize(const ref_map &refs)
 		if (it.second.second)
 			refs_active.insert(it.first);
 
-	/* load all of the unique refs into clist and bfs_queue */
+	/* load all of the unique refs into bfs_queue */
 	for (auto &it : refs_active) {
 		git::commit commit = repo.commit_lookup(&it);
-		git::commit commit_copy = commit;
 		git_time_t time = commit.time();
 
-		node new_node(std::move(commit), next_id++, time);
-		clist.push_back(std::move(new_node));
+		commits_visited.insert(*commit.id());
 
-		graph_node new_graph_node(std::move(commit_copy), time, 0);
-		auto ret = commits_loaded.insert(std::make_pair(*&it, std::move(new_graph_node)));
+		graph_node new_graph_node(std::move(commit), time, 0);
+		auto ret = commits_loaded.emplace(*&it, std::move(new_graph_node));
 		bfs_queue.push_back(&ret.first->second);
+	}
+
+	/* run BFS */
+	bfs();
+
+	/* load all of the unique refs into clist */
+	for (auto &it : refs_active) {
+		auto loaded_commit = commits_loaded.find(*&it);
+		graph_node *node = &loaded_commit->second;
+		clist.emplace_back(node, next_id++);
+		//commits_loaded.erase(loaded_commit);
 	}
 
 	std::make_heap(clist.begin(), clist.end());
@@ -214,30 +221,31 @@ void commit_list::remove_duplicates(const git_oid *latest_commit_oid, commit_gra
 void commit_list::insert_parents(const node &latest_node, commit_graph_info &graph)
 {
 	if (graph.num_parents > 0) {
-		git::commit parent = latest_node.commit.parent(0);
-		git_time_t parent_time = parent.time();
-		if (parent_time >= latest_node.time)
-			parent_time = latest_node.time - 1;
+		/* load_parent */
+		graph_node *node = latest_node.graph_node_ptr->parents[0];
 
 		/* set the first parent to have the same id as the child */
-		node new_node(std::move(parent), latest_node.id, parent_time);
-		clist.push_back(std::move(new_node));
+		clist.emplace_back(node, latest_node.id);
 		std::push_heap(clist.begin(), clist.end());
+
+		/* remove the parent from the graph */
+		//commits_loaded.erase(loaded_commit);
 	}
 
 	for (int i = 1; i < graph.num_parents; i++) {
-		git::commit parent = latest_node.commit.parent(i);
-		git_time_t parent_time = parent.time();
-		if (parent_time >= latest_node.time)
-			parent_time = latest_node.time - 1;
+		/* load_parent */
+		graph_node *node = latest_node.graph_node_ptr->parents[i];
 
 		/* give every additional parent a newly generated id */
-		node new_node(std::move(parent), next_id++, parent_time);
-		clist.push_back(std::move(new_node));
+		unsigned int node_id = next_id++;
+		clist.emplace_back(node, node_id);
 		std::push_heap(clist.begin(), clist.end());
 
-		/* add additional parents to the the new_parent_ids list*/
-		graph.new_parent_ids.push_back(new_node.id);
+		/* remove the parent from the graph */
+		//commits_loaded.erase(loaded_commit);
+
+		/* add additional parents to the the new_parent_ids list */
+		graph.new_parent_ids.push_back(node_id);
 	}
 }
 
@@ -250,12 +258,12 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 
 	graph.id_of_commit = latest_node.id;
 
-	remove_duplicates(latest_node.commit.id(), graph);
+	remove_duplicates(latest_node.graph_node_ptr->commit.id(), graph);
 
-	graph.num_parents = latest_node.commit.parentcount();
+	graph.num_parents = latest_node.graph_node_ptr->commit.parentcount();
 	insert_parents(latest_node, graph);
 
-	return std::move(latest_node.commit);
+	return std::move(latest_node.graph_node_ptr->commit);
 }
 
 bool commit_list::empty()

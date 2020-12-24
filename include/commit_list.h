@@ -58,21 +58,6 @@ public:
 	bool empty();
 
 private:
-	struct node {
-		git::commit commit;
-		unsigned int id;
-		git_time_t time;
-
-		node(git::commit &&commit, unsigned int id, git_time_t time);
-		node(const node &) = delete;
-		node &operator=(const node &) = delete;
-		node(node &&other) noexcept;
-		node &operator=(node &&) noexcept;
-
-		bool operator==(const git_oid *node_oid) const;
-		bool operator <(const node &node) const;
-	};
-
 	struct graph_node {
 		git::commit commit;
 		git_time_t time;
@@ -86,6 +71,20 @@ private:
 		graph_node &operator=(const graph_node &) = delete;
 		graph_node(graph_node &&) noexcept;
 		graph_node &operator=(graph_node &&) noexcept;
+	};
+
+	struct node {
+		graph_node *graph_node_ptr;
+		unsigned int id;
+
+		node(graph_node *graph_node_ptr, unsigned int id);
+		node(const node &) = delete;
+		node &operator=(const node &) = delete;
+		node(node &&other) noexcept;
+		node &operator=(node &&) noexcept;
+
+		bool operator==(const git_oid *node_oid) const;
+		bool operator <(const node &node) const;
 	};
 
 	const git::repository &repo;
