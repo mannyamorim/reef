@@ -56,7 +56,7 @@ bool commit_list::node::operator <(const node &node) const
 
 	if (graph_node_ptr->time == node.graph_node_ptr->time) {
 		const git_oid *this_oid = graph_node_ptr->commit.id();
-		const git_oid *node_oid = graph_node_ptr->commit.id();
+		const git_oid *node_oid = node.graph_node_ptr->commit.id();
 		if (git_oid_cmp(this_oid, node_oid) > 0)
 			return true;
 	}
@@ -150,7 +150,7 @@ void commit_list::fix_commit_times(graph_node *node, const git_time_t parent_tim
 {
 	node->time = parent_time + 1;
 	for (graph_node *child : node->children)
-		if (parent_time + 1 > child->time)
+		if (parent_time + 1 >= child->time)
 			fix_commit_times(child, parent_time + 1);
 }
 
@@ -256,6 +256,11 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 	node latest_node = std::move(clist.back());
 	clist.pop_back();
 
+	if (commits_returned.count(*latest_node.graph_node_ptr->commit.id()) == 0)
+		commits_returned.insert(*latest_node.graph_node_ptr->commit.id());
+	else
+		throw std::runtime_error("commit returned twice");
+
 	graph.id_of_commit = latest_node.id;
 
 	remove_duplicates(latest_node.graph_node_ptr->commit.id(), graph);
@@ -263,7 +268,7 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 	graph.num_parents = latest_node.graph_node_ptr->commit.parentcount();
 	insert_parents(latest_node, graph);
 
-	return std::move(latest_node.graph_node_ptr->commit);
+	return latest_node.graph_node_ptr->commit;
 }
 
 bool commit_list::empty()

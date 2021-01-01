@@ -91,6 +91,7 @@ private:
 	unsigned int next_id = 0;
 	std::vector<node> clist;
 	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> commits_visited;
+	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> commits_returned;
 	std::unordered_map<git_oid, graph_node, git_oid_ref_hash, git_oid_ref_cmp> commits_loaded;
 	std::list<graph_node *> bfs_queue;
 
