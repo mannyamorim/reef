@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "commit_list.h"
+#include "error.h"
 #include "ref_map.h"
 #include "cpp_git.h"
 
@@ -259,7 +260,7 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 	if (commits_returned.count(*latest_node.graph_node_ptr->commit.id()) == 0)
 		commits_returned.insert(*latest_node.graph_node_ptr->commit.id());
 	else
-		throw std::runtime_error("commit returned twice");
+		throw reef_error("commit returned twice");
 
 	graph.id_of_commit = latest_node.id;
 

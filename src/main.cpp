@@ -29,6 +29,7 @@
 #include "cpp_git.h"
 #include "cpp_curses.h"
 #include "commit_list.h"
+#include "error.h"
 #include "reef_string.h"
 #include "ref_map.h"
 #include "scroll_window.h"
@@ -153,6 +154,9 @@ int main(int argc, char * argv[])
 
 		/* start the main application */
 		window_loop(repo, prefs);
+	} catch (const reef_error &e) {
+		printf("reef error: %s\n", e.what());
+		return -1;
 	} catch (const cpp_curses::curses_error &e) {
 		printf("curses library error: %s\n", e.what());
 		return -1;
