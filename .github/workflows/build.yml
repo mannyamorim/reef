@@ -27,7 +27,7 @@ jobs:
         submodules: 'false'
 
     - name: install deps
-      run: sudo apt install libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
+      run: sudo apt update && sudo apt install libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
 
     - name: setup build directory
       run: mkdir build
