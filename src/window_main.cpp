@@ -97,7 +97,7 @@ window_main::window_main(const git::repository &repo, const preferences &prefs) 
 	primary_window(LINES, COLS - 40, 0, 40),
 	refs_window(LINES, 40, 0, 0),
 	commit_id_line_map(),
-	clist(refs, repo),
+	clist(refs, repo, prefs),
 	glist()
 {
 	display_refs();

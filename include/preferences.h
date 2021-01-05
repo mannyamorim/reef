@@ -34,6 +34,9 @@ public:
 
 	/* the number of columns that a horizontal scroll is equal to */
 	const int cols_horiz_scroll = 8;
+
+	/* the maximum length of a timestamp anomaly in the graph */
+	const int graph_approximation_factor = 32;
 };
 
 #endif /* PREFERENCES_H */

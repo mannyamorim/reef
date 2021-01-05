@@ -24,6 +24,7 @@
 
 #include "commit_list.h"
 #include "error.h"
+#include "preferences.h"
 #include "ref_map.h"
 #include "cpp_git.h"
 
@@ -91,17 +92,18 @@ commit_list::graph_node &commit_list::graph_node::operator=(graph_node &&other) 
 	return *this;
 }
 
-commit_list::commit_list(const ref_map &refs, const git::repository &repo) :
-	repo(repo)
+commit_list::commit_list(const ref_map &refs, const git::repository &repo, const preferences &prefs) :
+	repo(repo),
+	prefs(prefs)
 {
 	initialize_bfs_queue(refs);
-	bfs();
+	bfs(prefs.graph_approximation_factor);
 	initialize(refs);
 }
 
-void commit_list::bfs()
+void commit_list::bfs(int requested_depth)
 {
-	while (!bfs_queue.empty()) {
+	while (!bfs_queue.empty() && bfs_queue.front()->depth <= requested_depth) {
 		graph_node *node = bfs_queue.front();
 		bfs_queue.pop_front();
 
@@ -269,6 +271,8 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 
 	graph.num_parents = latest_node.graph_node_ptr->commit.parentcount();
 	insert_parents(latest_node, graph);
+
+	bfs(latest_node.graph_node_ptr->depth + prefs.graph_approximation_factor);
 
 	return latest_node.graph_node_ptr->commit;
 }

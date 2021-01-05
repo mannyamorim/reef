@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "cpp_git.h"
+#include "preferences.h"
 #include "ref_map.h"
 
 /* structure for storing information needed to produce the commit graph */
@@ -47,7 +48,7 @@ struct commit_graph_info {
 class commit_list {
 public:
 	/* constructor */
-	commit_list(const ref_map &refs, const git::repository &repo);
+	commit_list(const ref_map &refs, const git::repository &repo, const preferences &prefs);
 
 	/* load a list of references into a git_commit_list to begin the display process */
 	void initialize(const ref_map &refs);
@@ -88,6 +89,7 @@ private:
 	};
 
 	const git::repository &repo;
+	const preferences &prefs;
 	unsigned int next_id = 0;
 	std::vector<node> clist;
 	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> commits_visited;
@@ -99,7 +101,7 @@ private:
 	void insert_parents(const node &latest_node, commit_graph_info &graph);
 
 	void initialize_bfs_queue(const ref_map &refs);
-	void bfs();
+	void bfs(int requested_depth);
 	void fix_commit_times(graph_node *node, const git_time_t parent_time);
 };
 
