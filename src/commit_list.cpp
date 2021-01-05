@@ -94,6 +94,8 @@ commit_list::graph_node &commit_list::graph_node::operator=(graph_node &&other) 
 commit_list::commit_list(const ref_map &refs, const git::repository &repo) :
 	repo(repo)
 {
+	initialize_bfs_queue(refs);
+	bfs();
 	initialize(refs);
 }
 
@@ -155,23 +157,15 @@ void commit_list::fix_commit_times(graph_node *node, const git_time_t parent_tim
 			fix_commit_times(child, parent_time + 1);
 }
 
-void commit_list::initialize(const ref_map &refs)
+void commit_list::initialize_bfs_queue(const ref_map &refs)
 {
-	if (refs.refs.empty())
-		return;
-
-	/* reset state */
-	next_id = 0;
-	clist.clear();
-
-	/* copy all of the refs that are active into a set */
-	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> refs_active;
+	/* copy all of the refs into a set */
+	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> refs_unique;
 	for (auto &it : refs.refs)
-		if (it.second.second)
-			refs_active.insert(it.first);
+		refs_unique.insert(it.first);
 
 	/* load all of the unique refs into bfs_queue */
-	for (auto &it : refs_active) {
+	for (auto &it : refs_unique) {
 		git::commit commit = repo.commit_lookup(&it);
 		git_time_t time = commit.time();
 
@@ -181,16 +175,29 @@ void commit_list::initialize(const ref_map &refs)
 		auto ret = commits_loaded.emplace(*&it, std::move(new_graph_node));
 		bfs_queue.push_back(&ret.first->second);
 	}
+}
 
-	/* run BFS */
-	bfs();
+void commit_list::initialize(const ref_map &refs)
+{
+	if (refs.refs.empty())
+		return;
+
+	/* reset state */
+	next_id = 0;
+	clist.clear();
+	commits_returned.clear();
+
+	/* copy all of the refs that are active into a set */
+	std::unordered_set<git_oid, git_oid_ref_hash, git_oid_ref_cmp> refs_active;
+	for (auto &it : refs.refs)
+		if (it.second.second)
+			refs_active.insert(it.first);
 
 	/* load all of the unique refs into clist */
 	for (auto &it : refs_active) {
 		auto loaded_commit = commits_loaded.find(*&it);
 		graph_node *node = &loaded_commit->second;
 		clist.emplace_back(node, next_id++);
-		//commits_loaded.erase(loaded_commit);
 	}
 
 	std::make_heap(clist.begin(), clist.end());
@@ -228,9 +235,6 @@ void commit_list::insert_parents(const node &latest_node, commit_graph_info &gra
 		/* set the first parent to have the same id as the child */
 		clist.emplace_back(node, latest_node.id);
 		std::push_heap(clist.begin(), clist.end());
-
-		/* remove the parent from the graph */
-		//commits_loaded.erase(loaded_commit);
 	}
 
 	for (int i = 1; i < graph.num_parents; i++) {
@@ -241,9 +245,6 @@ void commit_list::insert_parents(const node &latest_node, commit_graph_info &gra
 		unsigned int node_id = next_id++;
 		clist.emplace_back(node, node_id);
 		std::push_heap(clist.begin(), clist.end());
-
-		/* remove the parent from the graph */
-		//commits_loaded.erase(loaded_commit);
 
 		/* add additional parents to the the new_parent_ids list */
 		graph.new_parent_ids.push_back(node_id);

@@ -98,6 +98,7 @@ private:
 	void remove_duplicates(const git_oid *latest_commit_oid, commit_graph_info &graph);
 	void insert_parents(const node &latest_node, commit_graph_info &graph);
 
+	void initialize_bfs_queue(const ref_map &refs);
 	void bfs();
 	void fix_commit_times(graph_node *node, const git_time_t parent_time);
 };
