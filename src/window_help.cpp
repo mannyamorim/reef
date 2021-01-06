@@ -68,7 +68,7 @@ window_base::input_response window_help::process_key_input(int key)
 	return res;
 }
 
-int window_help::_getch()
+int window_help::_getch(bool block)
 {
-	return window._getch();
+	return window._getch(block);
 }

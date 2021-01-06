@@ -37,7 +37,7 @@ public:
 	void redraw() override;
 
 	input_response process_key_input(int key) override;
-	int _getch() override;
+	int _getch(bool block) override;
 
 	static constexpr size_t MAIN_LINE_LENGTH = 256;
 

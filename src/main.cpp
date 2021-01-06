@@ -42,6 +42,52 @@
 
 #define CTRL(k) ((k) & 0x1f)
 
+bool process_key(int key,
+	std::shared_ptr<window_main> &main_window,
+	std::shared_ptr<window_help> &help_window,
+	std::shared_ptr<window_base> &curr_window)
+{
+	switch (key) {
+	case CTRL('c'):
+		return true;
+	case KEY_RESIZE:
+#ifdef PDCURSES
+		resize_term(0, 0);
+#endif // PDCURSES
+		curr_window->resize();
+		curr_window->refresh();
+
+		if (curr_window != main_window)
+			main_window->resize();
+		if (curr_window != help_window)
+			help_window->resize();
+		break;
+	case 'm':
+		curr_window = main_window;
+		curr_window->redraw();
+		curr_window->refresh();
+		break;
+	case 'h':
+		curr_window = help_window;
+		curr_window->redraw();
+		curr_window->refresh();
+		break;
+	default:
+	{
+		window_base::input_response res = curr_window->process_key_input(key);
+		switch (res.type) {
+		case window_base::input_response::type::OPEN_WINDOW:
+			curr_window = std::move(res.window);
+			curr_window->redraw();
+			curr_window->refresh();
+			break;
+		}
+	}
+	}
+
+	return false;
+}
+
 void window_loop(const git::repository &repo, const preferences &prefs)
 {
 	/* initialize curses mode */
@@ -70,48 +116,24 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 
 	curr_window->refresh();
 
-	main_window->finish_loading();
-
 	while (1) {
-		/* wait for user input */
-		int key = curr_window->_getch();
+		/* check for background work */
+		if (curr_window->has_background_work()) {
+			/* check for user input but do not block */
+			int key = curr_window->_getch(false);
 
-		switch (key) {
-		case CTRL('c'):
-			return;
-		case KEY_RESIZE:
-#ifdef PDCURSES
-			resize_term(0, 0);
-#endif // PDCURSES
-			curr_window->resize();
-			curr_window->refresh();
-
-			if (curr_window != main_window)
-				main_window->resize();
-			if (curr_window != help_window)
-				help_window->resize();
-			break;
-		case 'm':
-			curr_window = main_window;
-			curr_window->redraw();
-			curr_window->refresh();
-			break;
-		case 'h':
-			curr_window = help_window;
-			curr_window->redraw();
-			curr_window->refresh();
-			break;
-		default:
-		{
-			window_base::input_response res = curr_window->process_key_input(key);
-			switch (res.type) {
-			case window_base::input_response::type::OPEN_WINDOW:
-				curr_window = std::move(res.window);
-				curr_window->redraw();
-				curr_window->refresh();
-				break;
+			if (key != ERR) {
+				if (process_key(key, main_window, help_window, curr_window))
+					return;
+			} else {
+				curr_window->do_background_work();
 			}
-		}
+		} else {
+			/* wait for user input */
+			int key = curr_window->_getch(true);
+
+			if (process_key(key, main_window, help_window, curr_window))
+				return;
 		}
 	}
 }

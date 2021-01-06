@@ -73,15 +73,19 @@ static void draw_commit(scroll_window<git::commit> &swin, git::commit &&commit,
 	swin.add_line(chbuf, i, std::move(commit));
 }
 
+void window_main::display_commit()
+{
+	struct commit_graph_info graph;
+	git::commit commit = clist.get_next_commit(graph);
+
+	commit_id_line_map.insert(std::make_pair(*commit.id(), num_of_commits_loaded++));
+	draw_commit(primary_window, std::move(commit), graph, glist, refs);
+}
+
 void window_main::display_commits(int max)
 {
-	while (!clist.empty() && (num_of_commits_loaded < max)) {
-		struct commit_graph_info graph;
-		git::commit commit = clist.get_next_commit(graph);
-
-		commit_id_line_map.insert(std::make_pair(*commit.id(), num_of_commits_loaded++));
-		draw_commit(primary_window, std::move(commit), graph, glist, refs);
-	}
+	while (!clist.empty() && (num_of_commits_loaded < max))
+		display_commit();
 }
 
 void window_main::display_refs()
@@ -104,11 +108,6 @@ window_main::window_main(const git::repository &repo, const preferences &prefs) 
 	display_commits(BASE_NUM_OF_COMMITS);
 }
 
-void window_main::finish_loading()
-{
-	display_commits(INT_MAX);
-}
-
 window_main::~window_main() {}
 
 void window_main::refresh()
@@ -128,6 +127,17 @@ void window_main::redraw()
 {
 	primary_window.redraw();
 	refs_window.redraw();
+}
+
+bool window_main::has_background_work()
+{
+	return !clist.empty();
+}
+
+bool window_main::do_background_work()
+{
+	display_commit();
+	return !clist.empty();
 }
 
 window_base::input_response window_main::process_key_input(int key)
@@ -261,7 +271,7 @@ window_base::input_response window_main::process_key_input(int key)
 	};
 }
 
-int window_main::_getch()
+int window_main::_getch(bool block)
 {
-	return primary_window._getch();
+ 	return primary_window._getch(block);
 }

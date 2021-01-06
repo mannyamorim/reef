@@ -144,9 +144,9 @@ public:
 		return selected_line;
 	}
 
-	int _getch()
+	int _getch(bool block)
 	{
-		return window._getch();
+		return window._getch(block);
 	}
 
 	void change_current_and_selected_lines(int cline, int sline)

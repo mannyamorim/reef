@@ -32,7 +32,7 @@ public:
 			NO_ACTION,
 			OPEN_WINDOW,
 		} type;
-		
+
 		std::shared_ptr<window_base> window;
 	};
 
@@ -41,7 +41,9 @@ public:
 	virtual void redraw() = 0;
 
 	virtual input_response process_key_input(int key) = 0;
-	virtual int _getch() = 0;
+	virtual bool has_background_work() { return false; }
+	virtual bool do_background_work() { return false; }
+	virtual int _getch(bool block) = 0;
 };
 
 #endif /* WINDOW_BASE_H */

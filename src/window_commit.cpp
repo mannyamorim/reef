@@ -231,7 +231,7 @@ window_base::input_response window_commit::process_key_input(int key)
 	};
 }
 
-int window_commit::_getch()
+int window_commit::_getch(bool block)
 {
-	return file_window._getch();
+	return file_window._getch(block);
 }

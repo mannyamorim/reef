@@ -129,6 +129,8 @@ namespace cpp_curses
 			win = newwin(nlines, ncols, begin_y, begin_x);
 			if (!win)
 				throw curses_error("curses window creation failed");
+
+			wtimeout(win, 0);
 		}
 
 		~window()
@@ -220,11 +222,19 @@ namespace cpp_curses
 				throw curses_error("curses wscrl failed");
 		}
 
-		inline int _getch()
+		inline int _getch(bool block)
 		{
+			if (block)
+				wtimeout(win, -1);
+
 			const int res = wgetch(win);
-			if (res == ERR)
-				throw curses_error("curses wgetch failed");
+
+			if (block) {
+				wtimeout(win, 0);
+				if (res == ERR)
+					throw curses_error("curses wgetch failed");
+			}
+
 			return res;
 		}
 

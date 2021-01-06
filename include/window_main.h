@@ -32,7 +32,6 @@ class window_main : public window_base
 {
 public:
 	window_main(const git::repository &repo, const preferences &prefs);
-	void finish_loading();
 	~window_main();
 
 	void refresh() override;
@@ -40,7 +39,9 @@ public:
 	void redraw() override;
 
 	input_response process_key_input(int key) override;
-	int _getch() override;
+	bool has_background_work() override;
+	bool do_background_work() override;
+	int _getch(bool block) override;
 
 private:
 	const git::repository &repo;
@@ -55,6 +56,7 @@ private:
 	int num_of_commits_loaded = 0;
 
 	void display_refs();
+	void display_commit();
 	void display_commits(int max);
 };
 

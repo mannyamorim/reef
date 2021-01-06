@@ -35,7 +35,7 @@ public:
 	void redraw() override;
 
 	input_response process_key_input(int key) override;
-	int _getch() override;
+	int _getch(bool block) override;
 
 private:
 	cpp_curses::window window;
