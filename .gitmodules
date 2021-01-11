@@ -1,6 +1,6 @@
 [submodule "3rd_party/pdcurses"]
 	path = 3rd_party/pdcurses
-	url = https://github.com/Bill-Gray/PDCursesMod.git
+	url = https://github.com/mannyamorim/PDCursesMod.git
 [submodule "3rd_party/libgit2"]
 	path = 3rd_party/libgit2
 	url = https://github.com/libgit2/libgit2.git
