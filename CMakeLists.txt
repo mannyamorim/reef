@@ -108,7 +108,7 @@ else()
 	include_directories(${PDC_INCLUDE_DIR})
 	add_dependencies(reef pdcurses-build)
 
-	set(PDC_LIB_OUTPUT "${PDC_BINARY_DIR}/wincon/$<CONFIG>/pdcurses")
+	set(PDC_LIB_OUTPUT "${PDC_BINARY_DIR}/wincon/$<CONFIG>/pdcurses$<$<CONFIG:Debug>:d>")
 	target_link_libraries(reef ${PDC_LIB_OUTPUT})
 	add_custom_command(TARGET reef POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy ${PDC_LIB_OUTPUT}.dll ${CMAKE_BINARY_DIR}/$<CONFIG>
