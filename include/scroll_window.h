@@ -319,10 +319,11 @@ private:
 			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, attr);
 
 			int chars_to_write = std::min(decoded_size - horiz_scroll, win_columns);
-			if (chars_to_write < 0)
+			if (chars_to_write > 0)
+				window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
+			else
 				chars_to_write = 0;
 
-			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
 			if (chars_to_write != win_columns) {
 				cchar_t orig_bkrnd;
 				window._wgetbkgrnd(&orig_bkrnd);
@@ -340,10 +341,11 @@ private:
 			const int decoded_size = print_wchtype_buf(tmp_line_buf.get(), tmp_codepoint_buf.get(), MAX_LINE_LENGTH, lines[line].first, lines[line].second, 0);
 
 			int chars_to_write = std::min(decoded_size - horiz_scroll, win_columns);
-			if (chars_to_write < 0)
+			if (chars_to_write > 0)
+				window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
+			else
 				chars_to_write = 0;
-
-			window._mvwadd_wchnstr(line - current_line, 0, tmp_line_buf.get() + horiz_scroll, chars_to_write);
+			
 			if (chars_to_write != win_columns) {
 				window._move(line - current_line, chars_to_write);
 				window._clrtoeol();
