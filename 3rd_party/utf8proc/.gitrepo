@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/JuliaStrings/utf8proc
+	branch = v2.6.1
+	commit = 3203baa7374d67132384e2830b2183c92351bffc
+	parent = 7345031d7baf31591373a399dd55d120173ccb40
+	method = merge
+	cmdver = 0.4.3
