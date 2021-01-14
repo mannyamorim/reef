@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Bill-Gray/PDCursesMod
+	branch = 2b8e42d11415e6bc36c9a304a178bddd030f1daa
+	commit = 2b8e42d11415e6bc36c9a304a178bddd030f1daa
+	parent = b43a26953f372f200e68f78afd9609c1b1dca230
+	method = merge
+	cmdver = 0.4.3
