@@ -333,6 +333,16 @@ namespace git
 			return ptr;
 		}
 
+		bool is_branch() const
+		{
+			return git_reference_is_branch(ptr);
+		}
+
+		bool is_remote() const
+		{
+			return git_reference_is_remote(ptr);
+		}
+
 		bool is_note() const
 		{
 			return git_reference_is_note(ptr);

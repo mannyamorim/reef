@@ -31,8 +31,10 @@ ref_map::ref_map(const git::repository &repo)
 	while (!it.finished()) {
 		git::reference ref = it.get_reference();
 
-		if (ref.is_note())
+		if (!(ref.is_branch() || ref.is_tag() || ref.is_remote())) {
+			++it;
 			continue;
+		}
 
 		const git_oid *id = ref.target();
 
