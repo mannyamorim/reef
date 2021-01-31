@@ -18,6 +18,7 @@
 
 #include <locale.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unordered_map>
@@ -42,10 +43,11 @@
 
 #define CTRL(k) ((k) & 0x1f)
 
-bool process_key(int key,
-	std::shared_ptr<window_main> &main_window,
-	std::shared_ptr<window_help> &help_window,
-	std::shared_ptr<window_base> &curr_window)
+std::shared_ptr<window_main> main_window;
+std::shared_ptr<window_help> help_window;
+std::shared_ptr<window_base> curr_window;
+
+bool process_key(int key)
 {
 	switch (key) {
 	case CTRL('c'):
@@ -110,9 +112,9 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 		init_pair(6, COLOR_YELLOW, -1);
 	}
 
-	std::shared_ptr<window_main> main_window = std::make_shared<window_main>(repo, prefs);
-	std::shared_ptr<window_help> help_window = std::make_shared<window_help>();
-	std::shared_ptr<window_base> curr_window = main_window;
+	main_window = std::make_shared<window_main>(repo, prefs);
+	help_window = std::make_shared<window_help>();
+	curr_window = main_window;
 
 	curr_window->refresh();
 
@@ -123,7 +125,7 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 			int key = curr_window->_getch(false);
 
 			if (key != ERR) {
-				if (process_key(key, main_window, help_window, curr_window))
+				if (process_key(key))
 					return;
 			} else {
 				curr_window->do_background_work();
@@ -132,7 +134,7 @@ void window_loop(const git::repository &repo, const preferences &prefs)
 			/* wait for user input */
 			int key = curr_window->_getch(true);
 
-			if (process_key(key, main_window, help_window, curr_window))
+			if (process_key(key))
 				return;
 		}
 	}
@@ -194,5 +196,11 @@ int main(int argc, char * argv[])
 		return -1;
 	}
 
+#ifdef NDEBUG
+	/* skip destructing the global window objects */
+	quick_exit(0);
+#else
+	/* execute all the destructors for debug mode */
 	return 0;
+#endif /* NDEBUG */
 }
