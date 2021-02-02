@@ -166,7 +166,7 @@ int main(int argc, char * argv[])
 			printf("libgit2 returned an error:\nerr_code = %d\nerr_klass = %d\nerr_msg = %s\n",
 				e.get_err_code(), e.get_err_klass(), e.what());
 		}
-		return -1;
+		return 1;
 	}
 
 	try {
@@ -180,20 +180,20 @@ int main(int argc, char * argv[])
 		window_loop(repo, prefs);
 	} catch (const reef_error &e) {
 		printf("reef error: %s\n", e.what());
-		return -1;
+		return 2;
 	} catch (const cpp_curses::curses_error &e) {
 		printf("curses library error: %s\n", e.what());
-		return -1;
+		return 3;
 	} catch (const git::libgit_error &e) {
 		printf("libgit2 returned an error:\nerr_code = %d\nerr_klass = %d\nerr_msg = %s\n",
 			e.get_err_code(), e.get_err_klass(), e.what());
-		return -1;
+		return 4;
 	} catch (const std::exception &e) {
 		printf("stl error: %s\n", e.what());
-		return -1;
+		return 5;
 	} catch (...) {
 		printf("unknown error\n");
-		return -1;
+		return 255;
 	}
 
 #ifdef NDEBUG
