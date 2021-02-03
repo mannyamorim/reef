@@ -44,6 +44,35 @@ jobs:
       working-directory: build
       run: ctest --verbose
 
+  build-debian:
+
+    runs-on: ubuntu-latest
+    container: debian:buster
+
+    steps:
+    - name: install deps
+      run: apt update && apt install --yes git build-essential dpkg-dev debhelper git-buildpackage cmake libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
+
+    - uses: actions/checkout@v2
+      with:
+        path: reef
+
+    - name: build package
+      working-directory: reef
+      run: gbp buildpackage
+
+    - name: archive build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-debian-amd64
+        path: |
+          *.build
+          *.buildinfo
+          *.changes
+          *.deb
+          *.dsc
+          *.tar.*
+
   build-windows:
 
     runs-on: windows-latest
@@ -71,5 +100,5 @@ jobs:
     - name: archive build artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: build-release
+        name: build-win64
         path: build\Release
