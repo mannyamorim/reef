@@ -44,27 +44,93 @@ jobs:
       working-directory: build
       run: ctest --verbose
 
-  build-debian:
+  build-debian-src-package:
 
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: reef
+
+    - name: install deps
+      run: sudo apt update && sudo apt install git-buildpackage debhelper cmake libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
+
+    - name: build source package
+      working-directory: reef
+      run: gbp buildpackage -S
+
+    - name: archive build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-debian-src
+        path: |
+          *.build
+          *.buildinfo
+          *.changes
+          *.dsc
+          *.tar.*
+
+  build-debian-binary-buster:
+
+    needs: build-debian-src-package
     runs-on: ubuntu-latest
     container: debian:buster
 
     steps:
     - name: install deps
-      run: apt update && apt install --yes git build-essential dpkg-dev debhelper git-buildpackage cmake libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
+      run: apt update && apt install --yes git build-essential dpkg-dev debhelper cmake libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
 
-    - uses: actions/checkout@v2
+    - name: download source package
+      uses: actions/download-artifact@v2
       with:
-        path: reef
+        name: build-debian-src
 
-    - name: build package
+    - name: extract source package
+      run: dpkg-source --extract *.dsc reef
+
+    - name: build binary package
       working-directory: reef
-      run: gbp buildpackage
+      run: dpkg-buildpackage -uc -us
 
     - name: archive build artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: build-debian-amd64
+        name: build-debian-buster-amd64
+        path: |
+          *.build
+          *.buildinfo
+          *.changes
+          *.deb
+          *.dsc
+          *.tar.*
+
+  build-debian-binary-bullseye:
+
+    needs: build-debian-src-package
+    runs-on: ubuntu-latest
+    container: debian:bullseye
+
+    steps:
+    - name: install deps
+      run: apt update && apt install --yes git build-essential dpkg-dev debhelper cmake libncurses-dev libgit2-dev libutf8proc-dev googletest extra-cmake-modules
+
+    - name: download source package
+      uses: actions/download-artifact@v2
+      with:
+        name: build-debian-src
+
+    - name: extract source package
+      run: dpkg-source --extract *.dsc reef
+
+    - name: build binary package
+      working-directory: reef
+      run: dpkg-buildpackage -uc -us
+
+    - name: archive build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-debian-bullseye-amd64
         path: |
           *.build
           *.buildinfo
