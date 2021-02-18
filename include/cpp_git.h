@@ -429,8 +429,13 @@ namespace git
 			{
 				git_reference *new_ref;
 				int err = git_reference_next(&new_ref, ptr);
-				if (err != 0 && err != GIT_ITEROVER)
+				if (err == GIT_ITEROVER) {
+					end = true;
+					ref = git::reference(nullptr);
+					return;
+				} else if (err != 0) {
 					throw libgit_error(err);
+				}
 
 				ref = git::reference(new_ref);
 			}
