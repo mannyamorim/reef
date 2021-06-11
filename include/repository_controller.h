@@ -35,7 +35,7 @@ class repository_controller
 public:
 	repository_controller(std::string &dir);
 
-	void display_commits(std::function<void(QString &)> display_line);
+	void display_commits(std::function<void(const char *, size_t)> display_line);
 
 private:
 	git::repository repo;

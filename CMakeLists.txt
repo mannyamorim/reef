@@ -25,6 +25,7 @@ set(PROJECT_SOURCES
 	src/main_window.ui
 	src/ref_map.cpp
 	src/repository_controller.cpp
+	src/text_scroll_area.cpp
 	include/commit_list.h
 	include/cpp_git.h
 	include/error.h
@@ -32,6 +33,7 @@ set(PROJECT_SOURCES
 	include/preferences.h
 	include/ref_map.h
 	include/repository_controller.h
+	include/text_scroll_area.h
 	include/version.h
 	${TS_FILES}
 )

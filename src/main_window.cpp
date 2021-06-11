@@ -24,8 +24,7 @@ void main_window::handle_open_repository()
 	std::string dir = dir_qstr.toStdString();
 
 	repo_ctrl = std::make_unique<repository_controller>(dir);
-	repo_ctrl->display_commits([this] (QString &line) {
-		ui->textBrowser->textCursor().insertText(line);
-		ui->textBrowser->textCursor().insertText("\n");
+	repo_ctrl->display_commits([this] (const char *str, size_t size) {
+		ui->text_area->add_line(str, size);
 	});
 }
