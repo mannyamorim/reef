@@ -37,6 +37,8 @@ public:
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
+	void keyPressEvent(QKeyEvent *event) override;
+	void wheelEvent(QWheelEvent *event) override;
 
 private:
 	std::vector<std::unique_ptr<char[]>> blocks;
@@ -53,6 +55,7 @@ private:
 
 	void add_block();
 	char *get_memory_for_line(size_t size);
+	bool adjust_current_line(int delta);
 };
 
 #endif /* TEXT_SCROLL_AREA_H */
