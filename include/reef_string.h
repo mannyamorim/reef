@@ -67,8 +67,8 @@ static const uint8_t utf8d[] = {
 	1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
-uint32_t inline utf8_decode(uint32_t* state, uint32_t* codepoint, uint8_t byte) {
-	char32_t type = utf8d[byte];
+uint32_t inline utf8_decode(uint32_t* state, uint32_t* codepoint, uint32_t byte) {
+	uint32_t type = utf8d[byte];
 	*codepoint = (*state != UTF8_ACCEPT) ? (byte & 0x3Fu) | (*codepoint << 6) : (0xFF >> type) & (byte);
 	*state = utf8d[256 + *state * 16 + type];
 	return *state;
@@ -83,7 +83,7 @@ static inline void add_utf8_str_to_buf(QChar(&buf)[BUF_SIZE], const char str[], 
 	uint32_t state = UTF8_ACCEPT;
 	uint32_t codepoint;
 	for (size_t j = 0; i < BUF_SIZE && str[j]; ++j) {
-		if (utf8_decode(&state, &codepoint, str[j]))
+		if (utf8_decode(&state, &codepoint, reinterpret_cast<const uint8_t&>(str[j])))
 			continue;
 
 		if (codepoint <= 0xFFFF) {
@@ -105,7 +105,7 @@ static inline void add_utf8_str_to_buf(QChar(&buf)[BUF_SIZE], const char str[], 
 	uint32_t state = UTF8_ACCEPT;
 	uint32_t codepoint;
 	for (size_t j = 0; i < BUF_SIZE && j < n; ++j) {
-		if (utf8_decode(&state, &codepoint, str[j]))
+		if (utf8_decode(&state, &codepoint, reinterpret_cast<const uint8_t&>(str[j])))
 			continue;
 
 		if (codepoint <= 0xFFFF) {
