@@ -1,6 +1,6 @@
 /*
  * Reef - TUI Client for Git
- * Copyright (C) 2020 Emmanuel Mathi-Amorim
+ * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #include "cpp_git.h"
 #include "commit_list.h"
+#include "graph.h"
 #include "ref_map.h"
 #include "preferences.h"
 
@@ -35,13 +36,14 @@ class repository_controller
 public:
 	repository_controller(std::string &dir);
 
-	void display_commits(std::function<void(const char *, size_t)> display_line);
+	void display_commits(std::function<void(const QChar *, size_t)> display_line);
 
 private:
 	git::repository repo;
 	ref_map refs;
 	preferences prefs;
 	commit_list clist;
+	graph_list glist;
 };
 
 #endif /* REPOSITORY_CONTROLLER_H */

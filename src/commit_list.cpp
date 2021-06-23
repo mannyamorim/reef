@@ -1,6 +1,6 @@
 /*
  * Reef - TUI Client for Git
- * Copyright (C) 2020 Emmanuel Mathi-Amorim
+ * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /*
  * Reef - TUI Client for Git
- * Copyright (C) 2020 Emmanuel Mathi-Amorim
+ * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,13 +30,16 @@ public:
 	const int graph_approximation_factor = 32;
 
 	/* the number of lines that a page up/down is equal to */
-	static const int lines_page_up_down = 24;
+	static constexpr int lines_page_up_down = 24;
 
 	/* the number of lines that a mouse scroll up/down is equal to */
-	static const int lines_mouse_scroll = 3;
+	static constexpr int lines_mouse_scroll = 3;
 
 	/* the number of columns that a horizontal scroll is equal to */
-	static const int cols_horiz_scroll = 8;
+	static constexpr int cols_horiz_scroll = 8;
+
+	/* the maximum line length */
+	static constexpr size_t max_line_length = 1024;
 };
 
 #endif /* PREFERENCES_H */

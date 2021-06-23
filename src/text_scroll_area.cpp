@@ -1,3 +1,21 @@
+/*
+ * Reef - TUI Client for Git
+ * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "include/text_scroll_area.h"
 
 #include <QKeyEvent>
@@ -22,10 +40,10 @@ text_scroll_area::text_scroll_area(QWidget *parent) :
 	setFocusPolicy(Qt::FocusPolicy::StrongFocus);
 }
 
-void text_scroll_area::add_line(const char *str, size_t size)
+void text_scroll_area::add_line(const QChar *str, size_t size)
 {
-	char *line_memory = get_memory_for_line(size);
-	memcpy(line_memory, str, size);
+	QChar *line_memory = get_memory_for_line(size);
+	memcpy(line_memory, str, size * sizeof(QChar));
 	lines.push_back(std::make_pair(line_memory, size));
 
 	num_lines++;
@@ -48,7 +66,7 @@ void text_scroll_area::paintEvent(QPaintEvent *event)
 
 	for (int i = 0; i < num_lines_to_draw; i++) {
 		QPointF point(start_x, start_y + line_spacing * i);
-		QString text = QString::fromUtf8(lines[i + current_line].first, lines[i + current_line].second);
+		QString text = QString::fromRawData(lines[i + current_line].first, lines[i + current_line].second);
 		painter.drawText(point, text);
 	}
 }
@@ -100,10 +118,10 @@ void text_scroll_area::wheelEvent(QWheelEvent *event)
 
 void text_scroll_area::add_block()
 {
-	blocks.push_back(std::make_unique<char[]>(BLOCK_SIZE));
+	blocks.push_back(std::make_unique<QChar[]>(BLOCK_SIZE));
 }
 
-char *text_scroll_area::get_memory_for_line(size_t size)
+QChar *text_scroll_area::get_memory_for_line(size_t size)
 {
 	if (BLOCK_SIZE - block_usage < size) {
 		add_block();
@@ -111,7 +129,7 @@ char *text_scroll_area::get_memory_for_line(size_t size)
 		curr_block++;
 	}
 
-	char *line_memory = &blocks[curr_block][block_usage];
+	QChar *line_memory = &blocks[curr_block][block_usage];
 	block_usage += size;
 	return line_memory;
 }

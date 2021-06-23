@@ -1,6 +1,6 @@
 /*
  * Reef - TUI Client for Git
- * Copyright (C) 2020 Emmanuel Mathi-Amorim
+ * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ public:
 	text_scroll_area();
 	text_scroll_area(QWidget *parent);
 
-	void add_line(const char *str, size_t size);
+	void add_line(const QChar *str, size_t size);
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
@@ -41,8 +41,8 @@ protected:
 	void wheelEvent(QWheelEvent *event) override;
 
 private:
-	std::vector<std::unique_ptr<char[]>> blocks;
-	std::vector<std::pair<char *, size_t>> lines;
+	std::vector<std::unique_ptr<QChar[]>> blocks;
+	std::vector<std::pair<QChar *, size_t>> lines;
 
 	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
 	int curr_block = 0;	/* number of the current block */
@@ -54,7 +54,7 @@ private:
 	int horiz_scroll = 0;	/* the amount of horizontal scroll that has been applied */
 
 	void add_block();
-	char *get_memory_for_line(size_t size);
+	QChar *get_memory_for_line(size_t size);
 	bool adjust_current_line(int delta);
 };
 

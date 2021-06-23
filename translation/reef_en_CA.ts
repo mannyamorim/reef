@@ -15,7 +15,7 @@
     </message>
     <message>
         <location filename="../src/main_window.ui" line="50"/>
-        <location filename="../src/main_window.cpp" line="23"/>
+        <location filename="../src/main_window.cpp" line="41"/>
         <source>Open Repository</source>
         <translation type="unfinished"></translation>
     </message>
