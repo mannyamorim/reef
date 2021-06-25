@@ -20,14 +20,15 @@ set(TS_FILES
 
 set(PROJECT_SOURCES
 	src/commit_list.cpp
+	src/commit_model.cpp
 	src/graph.cpp
 	src/main.cpp
 	src/main_window.cpp
 	src/main_window.ui
 	src/ref_map.cpp
 	src/repository_controller.cpp
-	src/text_scroll_area.cpp
 	include/commit_list.h
+	include/commit_model.h
 	include/cpp_git.h
 	include/error.h
 	include/graph.h
@@ -36,7 +37,6 @@ set(PROJECT_SOURCES
 	include/reef_string.h
 	include/ref_map.h
 	include/repository_controller.h
-	include/text_scroll_area.h
 	include/version.h
 	${TS_FILES}
 )

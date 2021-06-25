@@ -27,18 +27,44 @@ repository_controller::repository_controller(std::string &dir) :
 	glist()
 {}
 
-void repository_controller::display_commits(std::function<void(const QChar *, size_t)> display_line)
+void repository_controller::display_refs(std::function<void (const char *)> display_ref)
+{
+	for (ref_map::refs_ordered_map::iterator it = refs.refs_ordered.begin(); it != refs.refs_ordered.end(); it++)
+		display_ref(it->first);
+}
+
+void repository_controller::display_commits()
 {
 	while (!clist.empty()) {
 		struct commit_graph_info graph;
 		git::commit commit = clist.get_next_commit(graph);
-		const char *summary = commit.summary();
 
 		QChar buf[preferences::max_line_length];
 
 		size_t i = glist.compute_graph(graph, buf);
+
+		if (refs.refs.count(*commit.id()) > 0) {
+			auto ref_range = refs.refs.equal_range(*commit.id());
+			for (auto &it = ref_range.first; it != ref_range.second; it++) {
+				if (!it->second.second)
+					/* ref is not active, don't show it */
+					continue;
+
+				add_utf8_str_to_buf(buf, "[", i);
+				add_utf8_str_to_buf(buf, it->second.first.shorthand(), i);
+				add_utf8_str_to_buf(buf, "] ", i);
+			}
+		}
+
+		const git_signature *author = commit.author();
+		struct tm *author_time = localtime((time_t *)&(author->when.time));
+		char time_buf[21];
+		strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S ", author_time);
+		add_utf8_str_to_buf(buf, time_buf, i);
+
+		const char *summary = commit.summary();
 		add_utf8_str_to_buf(buf, summary, i);
 
-		display_line(buf, i);
+		clist_model.add_line(buf, i);
 	}
 }

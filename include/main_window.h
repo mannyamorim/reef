@@ -44,5 +44,7 @@ private:
 	Ui::main_window *ui;
 
 	std::unique_ptr<repository_controller> repo_ctrl;
+
+	void load_repo(std::string dir);
 };
 #endif // MAIN_WINDOW_H

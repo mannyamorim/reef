@@ -14,15 +14,18 @@
    <string>Reef</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
-    <item>
-     <widget class="text_scroll_area" name="text_area">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
+      <widget class="QListWidget" name="ref_list"/>
+      <widget class="QTableView" name="commit_table">
+       <property name="showGrid">
+        <bool>false</bool>
+       </property>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -51,14 +54,6 @@
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>text_scroll_area</class>
-   <extends>QFrame</extends>
-   <header>text_scroll_area.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

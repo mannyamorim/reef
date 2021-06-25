@@ -39,10 +39,18 @@ main_window::~main_window()
 void main_window::handle_open_repository()
 {
 	QString dir_qstr = QFileDialog::getExistingDirectory(this, tr("Open Repository"));
-	std::string dir = dir_qstr.toStdString();
 
+	if (dir_qstr.length() > 0)
+		load_repo(dir_qstr.toStdString());
+}
+
+void main_window::load_repo(std::string dir)
+{
 	repo_ctrl = std::make_unique<repository_controller>(dir);
-	repo_ctrl->display_commits([this] (const QChar *str, size_t size) {
-		ui->text_area->add_line(str, size);
+	repo_ctrl->display_refs([this] (const char *ref) {
+		ui->ref_list->addItem(QString::fromUtf8(ref));
 	});
+
+	ui->commit_table->setModel(&repo_ctrl->clist_model);
+	repo_ctrl->display_commits();
 }

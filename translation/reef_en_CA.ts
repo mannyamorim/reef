@@ -9,12 +9,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="41"/>
+        <location filename="../src/main_window.ui" line="44"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="50"/>
+        <location filename="../src/main_window.ui" line="53"/>
         <location filename="../src/main_window.cpp" line="41"/>
         <source>Open Repository</source>
         <translation type="unfinished"></translation>

@@ -16,29 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* text_scroll_area.h */
+/* commit_model.h */
 #ifndef TEXT_SCROLL_AREA_H
 #define TEXT_SCROLL_AREA_H
 
-#include <QFrame>
+#include <QAbstractTableModel>
 
 #include <memory>
 #include <vector>
 
-class text_scroll_area : public QFrame
+class commit_model : public QAbstractTableModel
 {
 	Q_OBJECT
 
 public:
-	text_scroll_area();
-	text_scroll_area(QWidget *parent);
+	commit_model(QObject *parent = nullptr);
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 	void add_line(const QChar *str, size_t size);
-
-protected:
-	void paintEvent(QPaintEvent *event) override;
-	void keyPressEvent(QKeyEvent *event) override;
-	void wheelEvent(QWheelEvent *event) override;
 
 private:
 	std::vector<std::unique_ptr<QChar[]>> blocks;
@@ -46,16 +44,10 @@ private:
 
 	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
 	int curr_block = 0;	/* number of the current block */
-
-	int num_lines = 0;	/* number of lines in total in the scroll window */
-	int current_line = 0;	/* the number of the line at the top of the window */
-	int selected_line = 0;	/* the number of the selected/highlighted line */
-
-	int horiz_scroll = 0;	/* the amount of horizontal scroll that has been applied */
+	int num_lines = 0;	/* number of lines */
 
 	void add_block();
 	QChar *get_memory_for_line(size_t size);
-	bool adjust_current_line(int delta);
 };
 
 #endif /* TEXT_SCROLL_AREA_H */

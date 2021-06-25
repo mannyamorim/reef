@@ -27,6 +27,7 @@
 
 #include "cpp_git.h"
 #include "commit_list.h"
+#include "commit_model.h"
 #include "graph.h"
 #include "ref_map.h"
 #include "preferences.h"
@@ -36,7 +37,10 @@ class repository_controller
 public:
 	repository_controller(std::string &dir);
 
-	void display_commits(std::function<void(const QChar *, size_t)> display_line);
+	void display_refs(std::function<void(const char *)> display_ref);
+	void display_commits();
+
+	commit_model clist_model;
 
 private:
 	git::repository repo;
