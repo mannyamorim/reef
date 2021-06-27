@@ -4,20 +4,17 @@
 <context>
     <name>commit_model</name>
     <message>
-        <location filename="../src/commit_model.cpp" line="64"/>
-        <location filename="../src/repository_controller.cpp" line="140"/>
+        <location filename="../src/repository_controller.cpp" line="152"/>
         <source>Graph</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/commit_model.cpp" line="66"/>
-        <location filename="../src/repository_controller.cpp" line="142"/>
+        <location filename="../src/repository_controller.cpp" line="154"/>
         <source>Refs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/commit_model.cpp" line="68"/>
-        <location filename="../src/repository_controller.cpp" line="144"/>
+        <location filename="../src/repository_controller.cpp" line="156"/>
         <source>Summary</source>
         <translation type="unfinished"></translation>
     </message>

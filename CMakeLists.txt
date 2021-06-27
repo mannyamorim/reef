@@ -26,6 +26,7 @@ set(PROJECT_SOURCES
 	src/main_window.ui
 	src/ref_map.cpp
 	src/repository_controller.cpp
+	include/block_allocator.h
 	include/commit_list.h
 	include/cpp_git.h
 	include/error.h

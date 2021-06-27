@@ -24,14 +24,13 @@ repository_controller::repository_controller(std::string &dir) :
 	refs(repo),
 	prefs(),
 	clist(refs, repo, prefs),
-	glist()
-{
-	clist_model = std::make_unique<commit_model>();
-}
+	glist(),
+	clist_model(*this)
+{}
 
 QAbstractTableModel *repository_controller::get_commit_list_model()
 {
-	return clist_model.get();
+	return &clist_model;
 }
 
 void repository_controller::display_refs(std::function<void (const char *)> display_ref)
@@ -68,7 +67,23 @@ void repository_controller::display_commits()
 		const char *summary = commit.summary();
 		add_utf8_str_to_buf(summary_buf, summary, summary_size);
 
-		clist_model->add_commit(*commit.id(), graph_buf, graph_size, refs_buf, refs_size, summary_buf, summary_size);
+		QChar *graph_str_memory = block_alloc.allocate<QChar>(graph_size);
+		memcpy(graph_str_memory, graph_buf, graph_size * sizeof(QChar));
+
+		QChar *refs_str_memory = block_alloc.allocate<QChar>(refs_size);
+		memcpy(refs_str_memory, refs_buf, refs_size * sizeof(QChar));
+
+		QChar *summary_str_memory = block_alloc.allocate<QChar>(summary_size);
+		memcpy(summary_str_memory, summary_buf, summary_size * sizeof(QChar));
+
+		clist_model.beginInsertRows(QModelIndex(), clist_items.size(), clist_items.size());
+
+		clist_items.emplace_back(*commit.id(),
+				QString::fromRawData(graph_str_memory, graph_size),
+				QString::fromRawData(refs_str_memory, refs_size),
+				QString::fromRawData(summary_str_memory, summary_size));
+
+		clist_model.endInsertRows();
 	}
 }
 
@@ -96,18 +111,15 @@ repository_controller::commit_item &repository_controller::commit_item::operator
 	return *this;
 }
 
-constexpr size_t BLOCK_SIZE = 65536;
-
-commit_model::commit_model(QObject *parent) :
-	QAbstractTableModel(parent)
-{
-	add_block();
-}
+commit_model::commit_model(repository_controller &repo_ctrl, QObject *parent) :
+	QAbstractTableModel(parent),
+	repo_ctrl(repo_ctrl)
+{}
 
 int commit_model::rowCount(const QModelIndex &parent) const
 {
 	(void)parent;
-	return num_items;
+	return repo_ctrl.clist_items.size();
 }
 
 int commit_model::columnCount(const QModelIndex &parent) const
@@ -121,11 +133,11 @@ QVariant commit_model::data(const QModelIndex &index, int role) const
 	if (role == Qt::DisplayRole) {
 		switch (index.column()) {
 		case 0:
-			return items[index.row()].graph;
+			return repo_ctrl.clist_items[index.row()].graph;
 		case 1:
-			return items[index.row()].refs;
+			return repo_ctrl.clist_items[index.row()].refs;
 		case 2:
-			return items[index.row()].summary;
+			return repo_ctrl.clist_items[index.row()].summary;
 		}
 	}
 
@@ -146,48 +158,4 @@ QVariant commit_model::headerData(int section, Qt::Orientation orientation, int 
 	}
 
 	return QVariant();
-}
-
-void commit_model::add_commit(const git_oid &commit_id,
-		const QChar *graph_str, size_t graph_size,
-		const QChar *refs_str, size_t refs_size,
-		const QChar *summary_str, size_t summary_size)
-{
-	beginInsertRows(QModelIndex(), num_items, num_items);
-
-	QChar *graph_str_memory = get_memory_for_str(graph_size);
-	memcpy(graph_str_memory, graph_str, graph_size * sizeof(QChar));
-
-	QChar *refs_str_memory = get_memory_for_str(refs_size);
-	memcpy(refs_str_memory, refs_str, refs_size * sizeof(QChar));
-
-	QChar *summary_str_memory = get_memory_for_str(summary_size);
-	memcpy(summary_str_memory, summary_str, summary_size * sizeof(QChar));
-
-	items.emplace_back(commit_id,
-			QString::fromRawData(graph_str_memory, graph_size),
-			QString::fromRawData(refs_str_memory, refs_size),
-			QString::fromRawData(summary_str_memory, summary_size));
-
-	num_items++;
-
-	endInsertRows();
-}
-
-void commit_model::add_block()
-{
-	blocks.push_back(std::make_unique<QChar[]>(BLOCK_SIZE));
-}
-
-QChar *commit_model::get_memory_for_str(size_t size)
-{
-	if (BLOCK_SIZE - block_usage < size) {
-		add_block();
-		block_usage = 0;
-		curr_block++;
-	}
-
-	QChar *str_memory = &blocks[curr_block][block_usage];
-	block_usage += size;
-	return str_memory;
 }

@@ -26,13 +26,32 @@
 #include <QAbstractTableModel>
 #include <QString>
 
+#include "block_allocator.h"
 #include "cpp_git.h"
 #include "commit_list.h"
 #include "graph.h"
 #include "ref_map.h"
 #include "preferences.h"
 
-class commit_model;
+class repository_controller;
+
+class commit_model : public QAbstractTableModel
+{
+	friend class repository_controller;
+
+	Q_OBJECT
+
+public:
+	commit_model(repository_controller &repo_ctrl, QObject *parent = nullptr);
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+private:
+	repository_controller &repo_ctrl;
+};
 
 class repository_controller
 {
@@ -68,37 +87,10 @@ private:
 	commit_list clist;
 	graph_list glist;
 
-	std::unique_ptr<commit_model> clist_model;
-};
+	std::vector<commit_item> clist_items;
+	commit_model clist_model;
 
-class commit_model : public QAbstractTableModel
-{
-	friend class repository_controller;
-
-	Q_OBJECT
-
-public:
-	commit_model(QObject *parent = nullptr);
-
-	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-
-private:
-	std::vector<std::unique_ptr<QChar[]>> blocks;
-	std::vector<repository_controller::commit_item> items;
-
-	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
-	int curr_block = 0;	/* number of the current block */
-	int num_items = 0;	/* number of items */
-
-	void add_commit(const git_oid &commit_id,
-			const QChar *graph_str, size_t graph_size,
-			const QChar *refs_str, size_t refs_size,
-			const QChar *summary_str, size_t summary_size);
-	void add_block();
-	QChar *get_memory_for_str(size_t size);
+	block_allocator block_alloc;
 };
 
 #endif /* REPOSITORY_CONTROLLER_H */
