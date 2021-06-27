@@ -51,6 +51,6 @@ void main_window::load_repo(std::string dir)
 		ui->ref_list->addItem(QString::fromUtf8(ref));
 	});
 
-	ui->commit_table->setModel(&repo_ctrl->clist_model);
+	ui->commit_table->setModel(repo_ctrl->get_commit_list_model());
 	repo_ctrl->display_commits();
 }

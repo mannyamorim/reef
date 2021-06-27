@@ -20,7 +20,6 @@ set(TS_FILES
 
 set(PROJECT_SOURCES
 	src/commit_list.cpp
-	src/commit_model.cpp
 	src/graph.cpp
 	src/main.cpp
 	src/main_window.cpp
@@ -28,7 +27,6 @@ set(PROJECT_SOURCES
 	src/ref_map.cpp
 	src/repository_controller.cpp
 	include/commit_list.h
-	include/commit_model.h
 	include/cpp_git.h
 	include/error.h
 	include/graph.h

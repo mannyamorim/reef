@@ -25,7 +25,14 @@ repository_controller::repository_controller(std::string &dir) :
 	prefs(),
 	clist(refs, repo, prefs),
 	glist()
-{}
+{
+	clist_model = std::make_unique<commit_model>();
+}
+
+QAbstractTableModel *repository_controller::get_commit_list_model()
+{
+	return clist_model.get();
+}
 
 void repository_controller::display_refs(std::function<void (const char *)> display_ref)
 {
@@ -39,9 +46,11 @@ void repository_controller::display_commits()
 		struct commit_graph_info graph;
 		git::commit commit = clist.get_next_commit(graph);
 
-		QChar buf[preferences::max_line_length];
+		QChar graph_buf[preferences::max_line_length];
+		size_t graph_size = glist.compute_graph(graph, graph_buf);
 
-		size_t i = glist.compute_graph(graph, buf);
+		QChar refs_buf[preferences::max_line_length];
+		size_t refs_size = 0;
 
 		if (refs.refs.count(*commit.id()) > 0) {
 			auto ref_range = refs.refs.equal_range(*commit.id());
@@ -50,21 +59,135 @@ void repository_controller::display_commits()
 					/* ref is not active, don't show it */
 					continue;
 
-				add_utf8_str_to_buf(buf, "[", i);
-				add_utf8_str_to_buf(buf, it->second.first.shorthand(), i);
-				add_utf8_str_to_buf(buf, "] ", i);
+				add_utf8_str_to_buf(refs_buf, it->second.first.shorthand(), refs_size);
 			}
 		}
 
-		const git_signature *author = commit.author();
-		struct tm *author_time = localtime((time_t *)&(author->when.time));
-		char time_buf[21];
-		strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S ", author_time);
-		add_utf8_str_to_buf(buf, time_buf, i);
-
+		QChar summary_buf[preferences::max_line_length];
+		size_t summary_size = 0;
 		const char *summary = commit.summary();
-		add_utf8_str_to_buf(buf, summary, i);
+		add_utf8_str_to_buf(summary_buf, summary, summary_size);
 
-		clist_model.add_line(buf, i);
+		clist_model->add_commit(*commit.id(), graph_buf, graph_size, refs_buf, refs_size, summary_buf, summary_size);
 	}
+}
+
+repository_controller::commit_item::commit_item(const git_oid &commit_id, QString &&graph, QString &&refs, QString &&summary) :
+	commit_id(commit_id),
+	graph(std::move(graph)),
+	refs(std::move(refs)),
+	summary(std::move(summary))
+{}
+
+repository_controller::commit_item::commit_item(commit_item &&other) noexcept :
+	commit_id(other.commit_id),
+	graph(std::move(other.graph)),
+	refs(std::move(other.graph)),
+	summary(std::move(other.summary))
+{}
+
+repository_controller::commit_item &repository_controller::commit_item::operator=(commit_item &&other) noexcept
+{
+	commit_id = other.commit_id;
+	graph = std::move(other.graph);
+	refs = std::move(other.refs);
+	summary = std::move(other.summary);
+
+	return *this;
+}
+
+constexpr size_t BLOCK_SIZE = 65536;
+
+commit_model::commit_model(QObject *parent) :
+	QAbstractTableModel(parent)
+{
+	add_block();
+}
+
+int commit_model::rowCount(const QModelIndex &parent) const
+{
+	(void)parent;
+	return num_items;
+}
+
+int commit_model::columnCount(const QModelIndex &parent) const
+{
+	(void)parent;
+	return 3;
+}
+
+QVariant commit_model::data(const QModelIndex &index, int role) const
+{
+	if (role == Qt::DisplayRole) {
+		switch (index.column()) {
+		case 0:
+			return items[index.row()].graph;
+		case 1:
+			return items[index.row()].refs;
+		case 2:
+			return items[index.row()].summary;
+		}
+	}
+
+	return QVariant();
+}
+
+QVariant commit_model::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
+		switch (section) {
+		case 0:
+			return QString(tr("Graph"));
+		case 1:
+			return QString(tr("Refs"));
+		case 2:
+			return QString(tr("Summary"));
+		}
+	}
+
+	return QVariant();
+}
+
+void commit_model::add_commit(const git_oid &commit_id,
+		const QChar *graph_str, size_t graph_size,
+		const QChar *refs_str, size_t refs_size,
+		const QChar *summary_str, size_t summary_size)
+{
+	beginInsertRows(QModelIndex(), num_items, num_items);
+
+	QChar *graph_str_memory = get_memory_for_str(graph_size);
+	memcpy(graph_str_memory, graph_str, graph_size * sizeof(QChar));
+
+	QChar *refs_str_memory = get_memory_for_str(refs_size);
+	memcpy(refs_str_memory, refs_str, refs_size * sizeof(QChar));
+
+	QChar *summary_str_memory = get_memory_for_str(summary_size);
+	memcpy(summary_str_memory, summary_str, summary_size * sizeof(QChar));
+
+	items.emplace_back(commit_id,
+			QString::fromRawData(graph_str_memory, graph_size),
+			QString::fromRawData(refs_str_memory, refs_size),
+			QString::fromRawData(summary_str_memory, summary_size));
+
+	num_items++;
+
+	endInsertRows();
+}
+
+void commit_model::add_block()
+{
+	blocks.push_back(std::make_unique<QChar[]>(BLOCK_SIZE));
+}
+
+QChar *commit_model::get_memory_for_str(size_t size)
+{
+	if (BLOCK_SIZE - block_usage < size) {
+		add_block();
+		block_usage = 0;
+		curr_block++;
+	}
+
+	QChar *str_memory = &blocks[curr_block][block_usage];
+	block_usage += size;
+	return str_memory;
 }
