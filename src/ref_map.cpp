@@ -52,7 +52,7 @@ ref_map::ref_map(const git::repository &repo)
 
 		assert(id != NULL);
 
-		const char *shorthand = ref.shorthand();
+		const char *shorthand = ref.name();
 		std::pair<git::reference, bool> *pair_ref =
 			&refs.insert(std::make_pair(*id, std::make_pair(std::move(ref), true)))->second;
 		refs_ordered.insert(std::make_pair(shorthand, std::make_pair(*id, pair_ref)));

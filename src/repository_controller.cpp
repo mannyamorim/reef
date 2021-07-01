@@ -25,18 +25,39 @@ repository_controller::repository_controller(std::string &dir) :
 	prefs(),
 	clist(refs, repo, prefs),
 	glist(),
-	clist_model(*this)
+	clist_model(*this),
+	r_model(*this)
 {}
 
-QAbstractTableModel *repository_controller::get_commit_list_model()
+QAbstractItemModel *repository_controller::get_commit_model()
 {
 	return &clist_model;
 }
 
-void repository_controller::display_refs(std::function<void (const char *)> display_ref)
+QAbstractItemModel *repository_controller::get_ref_model()
+{
+	return &r_model;
+}
+
+void repository_controller::insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map)
+{
+	const char *ptr = strchr(ref_name, '/');
+	if (ptr != nullptr) {
+		QString name = QString::fromUtf8(ref_name, ptr - ref_name);
+		ref_item item((QString(name)), parent);
+		auto it = map.insert(std::make_pair(name, std::move(item))).first;
+		insert_ref(ptr + 1, &it->second, it->second.children);
+	} else {
+		QString name = QString::fromUtf8(ref_name);
+		ref_item item((QString(name)), parent);
+		map.insert(std::make_pair(name, std::move(item)));
+	}
+}
+
+void repository_controller::display_refs()
 {
 	for (ref_map::refs_ordered_map::iterator it = refs.refs_ordered.begin(); it != refs.refs_ordered.end(); it++)
-		display_ref(it->first);
+		insert_ref(it->first + sizeof("refs/") - 1, nullptr, ref_items);
 }
 
 void repository_controller::display_commits()
@@ -97,7 +118,7 @@ repository_controller::commit_item::commit_item(const git_oid &commit_id, QStrin
 repository_controller::commit_item::commit_item(commit_item &&other) noexcept :
 	commit_id(other.commit_id),
 	graph(std::move(other.graph)),
-	refs(std::move(other.graph)),
+	refs(std::move(other.refs)),
 	summary(std::move(other.summary))
 {}
 
@@ -158,4 +179,100 @@ QVariant commit_model::headerData(int section, Qt::Orientation orientation, int 
 	}
 
 	return QVariant();
+}
+
+repository_controller::ref_item::ref_item(QString &&name, ref_item *parent) :
+	name(std::move(name)),
+	parent(parent)
+{}
+
+repository_controller::ref_item::ref_item(ref_item &&other) noexcept :
+	name(std::move(other.name)),
+	parent(other.parent)
+{}
+
+repository_controller::ref_item &repository_controller::ref_item::operator=(ref_item &&other) noexcept
+{
+	name = std::move(other.name);
+	parent = other.parent;
+
+	return *this;
+}
+
+ref_model::ref_model(repository_controller &repo_ctrl, QObject *parent) :
+	QAbstractItemModel(parent),
+	repo_ctrl(repo_ctrl)
+{}
+
+int ref_model::rowCount(const QModelIndex &parent) const
+{
+	if (parent.isValid())
+		return static_cast<repository_controller::ref_item *>(parent.internalPointer())->children.size();
+	else
+		return repo_ctrl.ref_items.size();
+}
+
+int ref_model::columnCount(const QModelIndex &parent) const
+{
+	(void)parent;
+	return 1;
+}
+
+QVariant ref_model::data(const QModelIndex &index, int role) const
+{
+	if (!index.isValid())
+		return QVariant();
+
+	if (role == Qt::DisplayRole) {
+		switch (index.column()) {
+		case 0:
+			return static_cast<repository_controller::ref_item *>(index.internalPointer())->name;
+		}
+	}
+
+	return QVariant();
+}
+
+QVariant ref_model::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	(void)section;
+	(void)orientation;
+	(void)role;
+	return QVariant();
+}
+
+Qt::ItemFlags ref_model::flags(const QModelIndex &index) const
+{
+	if (index.isValid())
+		return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+	else
+		return Qt::NoItemFlags;
+}
+
+QModelIndex ref_model::index(int row, int column, const QModelIndex &parent) const
+{
+	if (!hasIndex(row, column, parent))
+		return QModelIndex();
+
+	std::map<QString, repository_controller::ref_item> &map = parent.isValid() ?
+			static_cast<repository_controller::ref_item *>(parent.internalPointer())->children :
+			repo_ctrl.ref_items;
+
+	auto it = map.begin();
+	for (int i = 0; i < row; i++)
+		it++;
+
+	return createIndex(row, column, &it->second);
+}
+
+QModelIndex ref_model::parent(const QModelIndex &index) const
+{
+	if (!index.isValid())
+		return QModelIndex();
+
+	repository_controller::ref_item *item = static_cast<repository_controller::ref_item *>(index.internalPointer());
+	if (item->parent == nullptr)
+		return QModelIndex();
+	else
+		return createIndex(0, 0, item->parent); // TODO UPDATE INDEXES
 }

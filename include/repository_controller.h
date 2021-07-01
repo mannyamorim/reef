@@ -53,16 +53,39 @@ private:
 	repository_controller &repo_ctrl;
 };
 
+class ref_model : public QAbstractItemModel
+{
+	friend class repository_controller;
+
+	Q_OBJECT
+
+public:
+	ref_model(repository_controller &repo_ctrl, QObject *parent = nullptr);
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex &index, int role) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+	Qt::ItemFlags flags(const QModelIndex &index) const override;
+	QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
+	QModelIndex parent(const QModelIndex &index) const override;
+
+private:
+	repository_controller &repo_ctrl;
+};
+
 class repository_controller
 {
 	friend class commit_model;
+	friend class ref_model;
 
 public:
 	repository_controller(std::string &dir);
 
-	QAbstractTableModel *get_commit_list_model();
+	QAbstractItemModel *get_commit_model();
+	QAbstractItemModel *get_ref_model();
 
-	void display_refs(std::function<void(const char *)> display_ref);
+	void display_refs();
 	void display_commits();
 
 private:
@@ -80,6 +103,19 @@ private:
 		QString summary;
 	};
 
+	struct ref_item
+	{
+		ref_item(QString &&name, ref_item *parent = nullptr);
+		ref_item(const commit_item &) = delete;
+		ref_item &operator=(const commit_item &) = delete;
+		ref_item(ref_item &&other) noexcept;
+		ref_item &operator=(ref_item &&) noexcept;
+
+		QString name;
+		std::map<QString, ref_item> children;
+		ref_item *parent = nullptr;
+	};
+
 	git::repository repo;
 	ref_map refs;
 	preferences prefs;
@@ -90,7 +126,12 @@ private:
 	std::vector<commit_item> clist_items;
 	commit_model clist_model;
 
+	std::map<QString, ref_item> ref_items;
+	ref_model r_model;
+
 	block_allocator block_alloc;
+
+	void insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map);
 };
 
 #endif /* REPOSITORY_CONTROLLER_H */

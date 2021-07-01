@@ -373,6 +373,11 @@ namespace git
 			return git_reference_shorthand(ptr);
 		}
 
+		const char *name() const
+		{
+			return git_reference_name(ptr);
+		}
+
 	private:
 		git_reference *ptr;
 	};
