@@ -11,6 +11,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
 
@@ -52,19 +54,16 @@ endif()
 
 target_link_libraries(reef PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
-# If using UNIX load the ECM extra-cmake-modules package to find LibGit2
-if(UNIX)
-	find_package(ECM REQUIRED NO_MODULE)
-	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_FIND_MODULE_DIR})
+# Libgit2 library
+find_package(LibGit2)
+if(LIBGIT2_FOUND)
+	include_directories(LIBGIT2_INCLUDE_DIR)
+	target_link_libraries(reef PRIVATE ${LIBGIT2_LIBRARIES})
+else()
+	message(FATAL_ERROR "libgit2 not found")
 endif()
 
-# Libgit2 library
-if(UNIX)
-	find_package(LibGit2)
-	if(LIBGIT2_FOUND)
-		include_directories(LIBGIT2_INCLUDE_DIR)
-		target_link_libraries(reef PRIVATE ${LIBGIT2_LIBRARIES})
-	else()
-		message(FATAL_ERROR "libgit2 not found")
-	endif()
+# Disable the console on Windows
+if(WIN32)
+	set_target_properties(reef PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
