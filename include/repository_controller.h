@@ -65,6 +65,7 @@ public:
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex &index, int role) const override;
+	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
 	QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
@@ -87,6 +88,7 @@ public:
 
 	void display_refs();
 	void display_commits();
+	void reload_commits();
 
 private:
 	struct commit_item
@@ -106,14 +108,21 @@ private:
 	struct ref_item
 	{
 		ref_item(QString &&name, ref_item *parent = nullptr);
+		ref_item(QString &&name, ref_map::refs_ordered_map::iterator ref_iter, ref_item *parent = nullptr);
 		ref_item(const commit_item &) = delete;
 		ref_item &operator=(const commit_item &) = delete;
 		ref_item(ref_item &&other) noexcept;
 		ref_item &operator=(ref_item &&) noexcept;
 
 		QString name;
-		std::map<QString, ref_item> children;
+		int index_in_parent;
+		Qt::CheckState checked = Qt::Checked;
+		ref_map::refs_ordered_map::iterator ref_iter;
+		std::map<QString, ref_item> children_map;
+		std::vector<std::pair<QString, ref_item>> children_vec;
 		ref_item *parent = nullptr;
+
+		void convert_to_vector();
 	};
 
 	git::repository repo;
@@ -126,12 +135,14 @@ private:
 	std::vector<commit_item> clist_items;
 	commit_model clist_model;
 
-	std::map<QString, ref_item> ref_items;
+	std::map<QString, ref_item> ref_items_map;
+	std::vector<std::pair<QString, ref_item>> ref_items_vec;
 	ref_model r_model;
 
 	block_allocator block_alloc;
 
-	void insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map);
+	void insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map, ref_map::refs_ordered_map::iterator ref_iter);
+	void convert_ref_items_to_vectors();
 };
 
 #endif /* REPOSITORY_CONTROLLER_H */

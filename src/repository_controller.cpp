@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <iterator>
+#include <functional>
+
 #include "reef_string.h"
 #include "repository_controller.h"
 
@@ -39,25 +42,40 @@ QAbstractItemModel *repository_controller::get_ref_model()
 	return &r_model;
 }
 
-void repository_controller::insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map)
+void repository_controller::insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map, ref_map::refs_ordered_map::iterator ref_iter)
 {
 	const char *ptr = strchr(ref_name, '/');
 	if (ptr != nullptr) {
 		QString name = QString::fromUtf8(ref_name, ptr - ref_name);
 		ref_item item((QString(name)), parent);
 		auto it = map.insert(std::make_pair(name, std::move(item))).first;
-		insert_ref(ptr + 1, &it->second, it->second.children);
+		insert_ref(ptr + 1, &it->second, it->second.children_map, ref_iter);
 	} else {
 		QString name = QString::fromUtf8(ref_name);
-		ref_item item((QString(name)), parent);
+		ref_item item((QString(name)), ref_iter, parent);
 		map.insert(std::make_pair(name, std::move(item)));
 	}
+}
+
+void repository_controller::convert_ref_items_to_vectors()
+{
+	ref_items_vec.insert(
+			ref_items_vec.begin(),
+			std::make_move_iterator(ref_items_map.begin()),
+			std::make_move_iterator(ref_items_map.end()));
+
+	ref_items_map.clear();
+
+	for (auto &it : ref_items_vec)
+		it.second.convert_to_vector();
 }
 
 void repository_controller::display_refs()
 {
 	for (ref_map::refs_ordered_map::iterator it = refs.refs_ordered.begin(); it != refs.refs_ordered.end(); it++)
-		insert_ref(it->first + sizeof("refs/") - 1, nullptr, ref_items);
+		insert_ref(it->first + sizeof("refs/") - 1, nullptr, ref_items_map, it);
+
+	convert_ref_items_to_vectors();
 }
 
 void repository_controller::display_commits()
@@ -106,6 +124,21 @@ void repository_controller::display_commits()
 
 		clist_model.endInsertRows();
 	}
+}
+
+void repository_controller::reload_commits()
+{
+	clist.initialize(refs);
+	glist.initialize();
+
+	clist_model.beginRemoveRows(QModelIndex(), 0, clist_items.size());
+
+	clist_items.clear();
+	block_alloc.clear();
+
+	clist_model.endRemoveRows();
+
+	display_commits();
 }
 
 repository_controller::commit_item::commit_item(const git_oid &commit_id, QString &&graph, QString &&refs, QString &&summary) :
@@ -186,17 +219,54 @@ repository_controller::ref_item::ref_item(QString &&name, ref_item *parent) :
 	parent(parent)
 {}
 
+repository_controller::ref_item::ref_item(QString &&name, ref_map::refs_ordered_map::iterator ref_iter, ref_item *parent) :
+	name(std::move(name)),
+	ref_iter(ref_iter),
+	parent(parent)
+{}
+
 repository_controller::ref_item::ref_item(ref_item &&other) noexcept :
 	name(std::move(other.name)),
+	ref_iter(other.ref_iter),
+	children_map(std::move(other.children_map)),
+	children_vec(std::move(other.children_vec)),
 	parent(other.parent)
 {}
 
 repository_controller::ref_item &repository_controller::ref_item::operator=(ref_item &&other) noexcept
 {
 	name = std::move(other.name);
+	ref_iter = other.ref_iter;
+	children_map = std::move(other.children_map);
+	children_vec = std::move(other.children_vec);
 	parent = other.parent;
 
 	return *this;
+}
+
+void repository_controller::ref_item::convert_to_vector()
+{
+	/* if there is only one child collapse the hierarchy */
+	while (children_map.size() == 1) {
+		std::pair<QString, ref_item> pair = std::move(*std::make_move_iterator(children_map.begin()));
+		name = name + "/" + pair.second.name;
+		ref_iter = std::move(pair.second.ref_iter);
+		children_map = std::move(pair.second.children_map);
+	}
+
+	/* move and convert the children */
+	children_vec.insert(
+			children_vec.begin(),
+			std::make_move_iterator(children_map.begin()),
+			std::make_move_iterator(children_map.end()));
+
+	children_map.clear();
+
+	for (size_t i = 0; i < children_vec.size(); i++) {
+		children_vec[i].second.index_in_parent = i;
+		children_vec[i].second.parent = this;
+		children_vec[i].second.convert_to_vector();
+	}
 }
 
 ref_model::ref_model(repository_controller &repo_ctrl, QObject *parent) :
@@ -207,9 +277,9 @@ ref_model::ref_model(repository_controller &repo_ctrl, QObject *parent) :
 int ref_model::rowCount(const QModelIndex &parent) const
 {
 	if (parent.isValid())
-		return static_cast<repository_controller::ref_item *>(parent.internalPointer())->children.size();
+		return static_cast<repository_controller::ref_item *>(parent.internalPointer())->children_vec.size();
 	else
-		return repo_ctrl.ref_items.size();
+		return repo_ctrl.ref_items_vec.size();
 }
 
 int ref_model::columnCount(const QModelIndex &parent) const
@@ -223,14 +293,86 @@ QVariant ref_model::data(const QModelIndex &index, int role) const
 	if (!index.isValid())
 		return QVariant();
 
+	auto item = static_cast<repository_controller::ref_item *>(index.internalPointer());
+
+	if (role == Qt::CheckStateRole) {
+		return item->checked;
+	}
+
 	if (role == Qt::DisplayRole) {
 		switch (index.column()) {
 		case 0:
-			return static_cast<repository_controller::ref_item *>(index.internalPointer())->name;
+			return item->name;
 		}
 	}
 
 	return QVariant();
+}
+
+bool ref_model::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+	if (!index.isValid())
+		return false;
+
+	if (role == Qt::CheckStateRole) {
+		Qt::CheckState state = value.value<Qt::CheckState>();
+
+		/* set the check state for all of the child items recursively */
+		std::function<void(const QModelIndex)> set_children = [this, state, &set_children] (const QModelIndex &index) {
+			auto item = static_cast<repository_controller::ref_item *>(index.internalPointer());
+			item->checked = state;
+			if (item->children_vec.size() == 0)
+				repo_ctrl.refs.set_ref_active(item->ref_iter, state == Qt::Checked);
+
+			for (size_t i = 0; i < item->children_vec.size(); i++)
+				set_children(ref_model::index(i, 0, index));
+
+			int rows = rowCount(index);
+			if (rows > 0)
+				emit dataChanged(
+						ref_model::index(0, 0, index),
+						ref_model::index(rows - 1, 0, index),
+						{ Qt::CheckStateRole });
+		};
+
+		set_children(index);
+
+		/* iterate up through the parents and set the check state */
+		QModelIndex index_it = index;
+		while (true) {
+			auto item = static_cast<repository_controller::ref_item *>(index_it.internalPointer());
+			if (item->parent != nullptr) {
+				Qt::CheckState new_parent_state = item->checked;
+				for (auto &it : item->parent->children_vec) {
+					if (new_parent_state != it.second.checked) {
+						new_parent_state = Qt::PartiallyChecked;
+						break;
+					}
+				}
+
+				if (new_parent_state != item->parent->checked) {
+					item->parent->checked = new_parent_state;
+					index_it = parent(index_it);
+					emit dataChanged(
+							ref_model::index(0, 0, index),
+							ref_model::index(0, 0, index),
+							{ Qt::CheckStateRole });
+				} else {
+					/* parent didn't change, short circuit */
+					break;
+				}
+			} else {
+				/* no more parents */
+				break;
+			}
+		}
+
+		repo_ctrl.reload_commits();
+
+		return true;
+	}
+
+	return false;
 }
 
 QVariant ref_model::headerData(int section, Qt::Orientation orientation, int role) const
@@ -243,10 +385,15 @@ QVariant ref_model::headerData(int section, Qt::Orientation orientation, int rol
 
 Qt::ItemFlags ref_model::flags(const QModelIndex &index) const
 {
-	if (index.isValid())
-		return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-	else
+	if (index.isValid()) {
+		if (rowCount(index) == 0)
+			return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+		else
+			return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate;
+
+	} else {
 		return Qt::NoItemFlags;
+	}
 }
 
 QModelIndex ref_model::index(int row, int column, const QModelIndex &parent) const
@@ -254,15 +401,11 @@ QModelIndex ref_model::index(int row, int column, const QModelIndex &parent) con
 	if (!hasIndex(row, column, parent))
 		return QModelIndex();
 
-	std::map<QString, repository_controller::ref_item> &map = parent.isValid() ?
-			static_cast<repository_controller::ref_item *>(parent.internalPointer())->children :
-			repo_ctrl.ref_items;
+	std::vector<std::pair<QString, repository_controller::ref_item>> &vec = parent.isValid() ?
+			static_cast<repository_controller::ref_item *>(parent.internalPointer())->children_vec :
+			repo_ctrl.ref_items_vec;
 
-	auto it = map.begin();
-	for (int i = 0; i < row; i++)
-		it++;
-
-	return createIndex(row, column, &it->second);
+	return createIndex(row, column, &vec[row].second);
 }
 
 QModelIndex ref_model::parent(const QModelIndex &index) const
@@ -274,5 +417,5 @@ QModelIndex ref_model::parent(const QModelIndex &index) const
 	if (item->parent == nullptr)
 		return QModelIndex();
 	else
-		return createIndex(0, 0, item->parent); // TODO UPDATE INDEXES
+		return createIndex(item->index_in_parent, 0, item->parent);
 }

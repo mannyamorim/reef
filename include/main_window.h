@@ -39,6 +39,7 @@ public:
 
 public slots:
 	void handle_open_repository();
+	void handle_close_repository();
 
 private:
 	Ui::main_window *ui;

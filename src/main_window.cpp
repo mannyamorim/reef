@@ -29,6 +29,7 @@ main_window::main_window(QWidget *parent)
 {
 	ui->setupUi(this);
 	connect(ui->action_open_repository, &QAction::triggered, this, &main_window::handle_open_repository);
+	connect(ui->action_close_repository, &QAction::triggered, this, &main_window::handle_close_repository);
 }
 
 main_window::~main_window()
@@ -42,6 +43,13 @@ void main_window::handle_open_repository()
 
 	if (dir_qstr.length() > 0)
 		load_repo(dir_qstr.toStdString());
+}
+
+void main_window::handle_close_repository()
+{
+	ui->commit_table->setModel(nullptr);
+	ui->ref_tree->setModel(nullptr);
+	repo_ctrl.reset();
 }
 
 void main_window::load_repo(std::string dir)

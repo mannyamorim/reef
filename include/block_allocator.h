@@ -43,6 +43,13 @@ public:
 		return reinterpret_cast<T *>(ptr);
 	}
 
+	void clear()
+	{
+		blocks.clear();
+		block_usage = 0;
+		curr_block = -1;
+	}
+
 private:
 	std::vector<std::unique_ptr<uint8_t[]>> blocks;
 

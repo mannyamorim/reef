@@ -4,17 +4,17 @@
 <context>
     <name>commit_model</name>
     <message>
-        <location filename="../src/repository_controller.cpp" line="173"/>
+        <location filename="../src/repository_controller.cpp" line="206"/>
         <source>Graph</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="175"/>
+        <location filename="../src/repository_controller.cpp" line="208"/>
         <source>Refs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="177"/>
+        <location filename="../src/repository_controller.cpp" line="210"/>
         <source>Summary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -32,9 +32,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="62"/>
-        <location filename="../src/main_window.cpp" line="41"/>
+        <location filename="../src/main_window.ui" line="63"/>
+        <location filename="../src/main_window.cpp" line="42"/>
         <source>Open Repository</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/main_window.ui" line="68"/>
+        <source>Close Repository</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
