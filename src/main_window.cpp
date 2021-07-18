@@ -30,6 +30,7 @@ main_window::main_window(QWidget *parent)
 	ui->setupUi(this);
 	connect(ui->action_open_repository, &QAction::triggered, this, &main_window::handle_open_repository);
 	connect(ui->action_close_repository, &QAction::triggered, this, &main_window::handle_close_repository);
+	connect(ui->action_exit, &QAction::triggered, qApp, QApplication::quit);
 }
 
 main_window::~main_window()

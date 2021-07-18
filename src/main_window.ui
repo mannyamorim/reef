@@ -54,6 +54,8 @@
     </property>
     <addaction name="action_open_repository"/>
     <addaction name="action_close_repository"/>
+    <addaction name="separator"/>
+    <addaction name="action_exit"/>
    </widget>
    <addaction name="menu_file"/>
   </widget>
@@ -66,6 +68,11 @@
   <action name="action_close_repository">
    <property name="text">
     <string>Close Repository</string>
+   </property>
+  </action>
+  <action name="action_exit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>
