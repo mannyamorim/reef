@@ -16,38 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
+#ifndef GRAPH_DELEGATE_H
+#define GRAPH_DELEGATE_H
 
-#include <memory>
+#include <QPainter>
+#include <QStyledItemDelegate>
 
-#include "graph_delegate.h"
-#include "repository_controller.h"
-
-#include <QMainWindow>
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class main_window; }
-QT_END_NAMESPACE
-
-class main_window : public QMainWindow
+class graph_delegate : public QStyledItemDelegate
 {
-	Q_OBJECT
-
 public:
-	main_window(QWidget *parent = nullptr);
-	~main_window();
-
-public slots:
-	void handle_open_repository();
-	void handle_close_repository();
-
-private:
-	Ui::main_window *ui;
-
-	graph_delegate gdelegate;
-	std::unique_ptr<repository_controller> repo_ctrl;
-
-	void load_repo(std::string dir);
+	void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
-#endif // MAIN_WINDOW_H
+
+#endif /* GRAPH_DELEGATE_H */

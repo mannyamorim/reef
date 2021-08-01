@@ -31,6 +31,7 @@ main_window::main_window(QWidget *parent)
 	connect(ui->action_open_repository, &QAction::triggered, this, &main_window::handle_open_repository);
 	connect(ui->action_close_repository, &QAction::triggered, this, &main_window::handle_close_repository);
 	connect(ui->action_exit, &QAction::triggered, qApp, QApplication::quit);
+	ui->commit_table->setItemDelegateForColumn(0, &gdelegate);
 }
 
 main_window::~main_window()
@@ -55,11 +56,23 @@ void main_window::handle_close_repository()
 
 void main_window::load_repo(std::string dir)
 {
-	repo_ctrl = std::make_unique<repository_controller>(dir);
+	std::function<void(const QString &)> update_status_func = [this] (const QString &message) {
+		ui->statusbar->showMessage(message);
+	};
+
+	try {
+		repo_ctrl = std::make_unique<repository_controller>(dir, update_status_func);
+	} catch (git::libgit_error e) {
+		ui->statusbar->showMessage(e.what());
+		return;
+	}
+
 	repo_ctrl->display_refs();
 
 	ui->commit_table->setModel(repo_ctrl->get_commit_model());
 	ui->ref_tree->setModel(repo_ctrl->get_ref_model());
+
+	qApp->processEvents();
 
 	repo_ctrl->display_commits();
 }

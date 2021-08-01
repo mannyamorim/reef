@@ -16,20 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <chrono>
 #include <iterator>
 #include <functional>
+
+#include <QApplication>
+#include <QFontDatabase>
 
 #include "reef_string.h"
 #include "repository_controller.h"
 
-repository_controller::repository_controller(std::string &dir) :
+repository_controller::repository_controller(std::string &dir, std::function<void(const QString &)> update_status_func) :
 	repo(dir.c_str()),
 	refs(repo),
 	prefs(),
 	clist(refs, repo, prefs),
 	glist(),
 	clist_model(*this),
-	r_model(*this)
+	r_model(*this),
+	update_status_func(update_status_func)
 {}
 
 QAbstractItemModel *repository_controller::get_commit_model()
@@ -80,11 +85,14 @@ void repository_controller::display_refs()
 
 void repository_controller::display_commits()
 {
+	size_t i = 0;
+	auto last_event_loop_time = std::chrono::steady_clock::now();
+
 	while (!clist.empty()) {
 		struct commit_graph_info graph;
 		git::commit commit = clist.get_next_commit(graph);
 
-		QChar graph_buf[preferences::max_line_length];
+		graph_char graph_buf[preferences::max_line_length];
 		size_t graph_size = glist.compute_graph(graph, graph_buf);
 
 		QChar refs_buf[preferences::max_line_length];
@@ -106,8 +114,8 @@ void repository_controller::display_commits()
 		const char *summary = commit.summary();
 		add_utf8_str_to_buf(summary_buf, summary, summary_size);
 
-		QChar *graph_str_memory = block_alloc.allocate<QChar>(graph_size);
-		memcpy(graph_str_memory, graph_buf, graph_size * sizeof(QChar));
+		char *graph_str_memory = block_alloc.allocate<char>(graph_size * sizeof(graph_char));
+		memcpy(graph_str_memory, graph_buf, graph_size * sizeof(graph_char));
 
 		QChar *refs_str_memory = block_alloc.allocate<QChar>(refs_size);
 		memcpy(refs_str_memory, refs_buf, refs_size * sizeof(QChar));
@@ -118,11 +126,21 @@ void repository_controller::display_commits()
 		clist_model.beginInsertRows(QModelIndex(), clist_items.size(), clist_items.size());
 
 		clist_items.emplace_back(*commit.id(),
-				QString::fromRawData(graph_str_memory, graph_size),
+				QByteArray::fromRawData(graph_str_memory, graph_size * sizeof(graph_char)),
 				QString::fromRawData(refs_str_memory, refs_size),
 				QString::fromRawData(summary_str_memory, summary_size));
 
 		clist_model.endInsertRows();
+
+		i++;
+		const auto now = std::chrono::steady_clock::now();
+		const long duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_event_loop_time).count();
+
+		if (duration > preferences::window_update_interval) {
+			update_status_func(QString::number(i));
+			qApp->processEvents();
+			last_event_loop_time = now;
+		}
 	}
 }
 
@@ -141,7 +159,7 @@ void repository_controller::reload_commits()
 	display_commits();
 }
 
-repository_controller::commit_item::commit_item(const git_oid &commit_id, QString &&graph, QString &&refs, QString &&summary) :
+repository_controller::commit_item::commit_item(const git_oid &commit_id, QByteArray &&graph, QString &&refs, QString &&summary) :
 	commit_id(commit_id),
 	graph(std::move(graph)),
 	refs(std::move(refs)),
@@ -184,6 +202,9 @@ int commit_model::columnCount(const QModelIndex &parent) const
 
 QVariant commit_model::data(const QModelIndex &index, int role) const
 {
+	if (!index.isValid())
+		return QVariant();
+
 	if (role == Qt::DisplayRole) {
 		switch (index.column()) {
 		case 0:
@@ -192,6 +213,13 @@ QVariant commit_model::data(const QModelIndex &index, int role) const
 			return repo_ctrl.clist_items[index.row()].refs;
 		case 2:
 			return repo_ctrl.clist_items[index.row()].summary;
+		}
+	}
+
+	if (role == Qt::FontRole) {
+		switch (index.column()) {
+		case 0:
+			return QFontDatabase::systemFont(QFontDatabase::FixedFont);
 		}
 	}
 

@@ -4,17 +4,17 @@
 <context>
     <name>commit_model</name>
     <message>
-        <location filename="../src/repository_controller.cpp" line="206"/>
+        <location filename="../src/repository_controller.cpp" line="234"/>
         <source>Graph</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="208"/>
+        <location filename="../src/repository_controller.cpp" line="236"/>
         <source>Refs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="210"/>
+        <location filename="../src/repository_controller.cpp" line="238"/>
         <source>Summary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -32,14 +32,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="63"/>
-        <location filename="../src/main_window.cpp" line="42"/>
+        <location filename="../src/main_window.ui" line="65"/>
+        <location filename="../src/main_window.cpp" line="44"/>
         <source>Open Repository</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="68"/>
+        <location filename="../src/main_window.ui" line="70"/>
         <source>Close Repository</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/main_window.ui" line="75"/>
+        <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

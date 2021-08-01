@@ -81,7 +81,7 @@ class repository_controller
 	friend class ref_model;
 
 public:
-	repository_controller(std::string &dir);
+	repository_controller(std::string &dir, std::function<void(const QString &)> update_status_func);
 
 	QAbstractItemModel *get_commit_model();
 	QAbstractItemModel *get_ref_model();
@@ -93,14 +93,14 @@ public:
 private:
 	struct commit_item
 	{
-		commit_item(const git_oid &commit_id, QString &&graph, QString &&refs, QString &&summary);
+		commit_item(const git_oid &commit_id, QByteArray &&graph, QString &&refs, QString &&summary);
 		commit_item(const commit_item &) = delete;
 		commit_item &operator=(const commit_item &) = delete;
 		commit_item(commit_item &&other) noexcept;
 		commit_item &operator=(commit_item &&) noexcept;
 
 		git_oid commit_id;
-		QString graph;
+		QByteArray graph;
 		QString refs;
 		QString summary;
 	};
@@ -140,6 +140,8 @@ private:
 	ref_model r_model;
 
 	block_allocator block_alloc;
+
+	std::function<void(const QString &)> update_status_func;
 
 	void insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map, ref_map::refs_ordered_map::iterator ref_iter);
 	void convert_ref_items_to_vectors();

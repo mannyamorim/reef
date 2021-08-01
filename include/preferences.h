@@ -23,23 +23,19 @@
 class preferences
 {
 public:
+	/* user controllable properties */
 	/* the number of spaces that a tab is displayed as */
 	const size_t tab_length = 8;
 
 	/* the maximum length of a timestamp anomaly in the graph */
 	const int graph_approximation_factor = 32;
 
-	/* the number of lines that a page up/down is equal to */
-	static constexpr int lines_page_up_down = 24;
-
-	/* the number of lines that a mouse scroll up/down is equal to */
-	static constexpr int lines_mouse_scroll = 3;
-
-	/* the number of columns that a horizontal scroll is equal to */
-	static constexpr int cols_horiz_scroll = 8;
-
+	/* non user controllable properties */
 	/* the maximum line length */
 	static constexpr size_t max_line_length = 1024;
+
+	/* the interval in milliseconds for often the UI events should be processed */
+	static constexpr long window_update_interval = 50;
 };
 
 #endif /* PREFERENCES_H */

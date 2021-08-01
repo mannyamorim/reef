@@ -23,6 +23,7 @@ set(TS_FILES
 set(PROJECT_SOURCES
 	src/commit_list.cpp
 	src/graph.cpp
+	src/graph_delegate.cpp
 	src/main.cpp
 	src/main_window.cpp
 	src/main_window.ui
@@ -33,6 +34,7 @@ set(PROJECT_SOURCES
 	include/cpp_git.h
 	include/error.h
 	include/graph.h
+	include/graph_delegate.h
 	include/main_window.h
 	include/preferences.h
 	include/reef_string.h

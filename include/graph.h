@@ -20,18 +20,35 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#define GRAPH_MAX_COLORS 6
-
 #include <QString>
 
 #include <vector>
 
 #include "commit_list.h"
 
+constexpr unsigned char GRAPH_MAX_COLORS = 6;
+
+/* flags for graph drawing characters */
+constexpr unsigned char G_EMPTY = 0x00;
+constexpr unsigned char G_LEFT  = 0x01;
+constexpr unsigned char G_RIGHT = 0x02;
+constexpr unsigned char G_UPPER = 0x04;
+constexpr unsigned char G_LOWER = 0x08;
+constexpr unsigned char G_MARK  = 0x10;
+constexpr unsigned char G_INITIAL = 0x11;
+
+/* structure to hold a finished graph character along with its color */
+struct graph_char {
+	/* the character defined using the flags */
+	unsigned char flags;
+	/* the character's color */
+	unsigned char color;
+};
+
 class graph_list {
 public:
 	void initialize();
-	size_t compute_graph(commit_graph_info &graph, QChar (&buf)[preferences::max_line_length]);
+	size_t compute_graph(commit_graph_info &graph, graph_char (&buf)[preferences::max_line_length]);
 
 private:
 	enum class GRAPH_STATUS : char {
