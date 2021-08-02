@@ -31,7 +31,7 @@ constexpr QColor graph_colors[] = {
 };
 
 /* width to height ratio for the characters */
-constexpr qreal character_aspect_ratio = 0.6;
+constexpr qreal character_aspect_ratio = 0.5;
 
 /* width of the pen strokes */
 constexpr qreal stroke_width = 1.0;
@@ -47,8 +47,8 @@ void graph_delegate::paint(QPainter *painter, const QStyleOptionViewItem &option
 		painter->save();
 
 		/* prepare the paint settings */
-		QBrush brush = QBrush(Qt::SolidPattern);
-		QPen pen = QPen(brush, stroke_width, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
+		QBrush brush(Qt::SolidPattern);
+		QPen pen(brush, stroke_width, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
 		painter->setBrush(brush);
 		painter->setClipRect(option.rect);
 		painter->setRenderHint(QPainter::Antialiasing, true);
