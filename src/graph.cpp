@@ -27,33 +27,6 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-constexpr size_t num_line_drawing_chars = 18;
-
-const QChar line_drawing_chars[] = {
-	u' ', /* 00 = G_EMPTY                              */
-	u' ', /* 01 = G_LEFT                               */
-	u' ', /* 02 =          G_RIGHT                     */
-	u'─', /* 03 = G_LEFT | G_RIGHT                     */
-
-	u' ', /* 04 =                    G_UPPER           */
-	u'┘', /* 05 = G_LEFT           | G_UPPER           */
-	u'└', /* 06 =          G_RIGHT | G_UPPER           */
-	u'┴', /* 07 = G_LEFT | G_RIGHT | G_UPPER           */
-
-	u' ', /* 08 =                              G_LOWER */
-	u'┐', /* 09 = G_LEFT                     | G_LOWER */
-	u'┌', /* 10 =          G_RIGHT           | G_LOWER */
-	u'┬', /* 11 = G_LEFT | G_RIGHT           | G_LOWER */
-
-	u'│', /* 12 =                    G_UPPER | G_LOWER */
-	u'┤', /* 13 = G_LEFT           | G_UPPER | G_LOWER */
-	u'├', /* 14 =          G_RIGHT | G_UPPER | G_LOWER */
-	u'┼', /* 15 = G_LEFT | G_RIGHT | G_UPPER | G_LOWER */
-
-	u'•', /* 16 = G_MARK                               */
-	u'I', /* 17 = G_INITIAL                            */
-};
-
 unsigned char graph_list::get_next_color()
 {
 	unsigned int min = UINT_MAX;

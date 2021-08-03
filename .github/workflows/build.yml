@@ -25,7 +25,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Depedencies
-      run: sudo apt update && sudo apt install qtbase5-dev qttools5-dev libgit2-dev
+      run: sudo apt update && sudo apt install qtbase5-dev qttools5-dev libgit2-dev googletest
 
     - name: Setup Build Directory
       run: mkdir build
@@ -37,4 +37,8 @@ jobs:
     - name: Make
       working-directory: build
       run: make
+
+    - name: Test
+      working-directory: build
+      run: ctest --verbose
 

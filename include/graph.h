@@ -20,8 +20,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <QString>
-
 #include <vector>
 
 #include "commit_list.h"

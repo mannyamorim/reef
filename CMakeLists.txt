@@ -69,3 +69,31 @@ endif()
 if(WIN32)
 	set_target_properties(reef PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
+
+# Tests with googletest
+
+# Prevent overriding the parent project's compiler/linker settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Add googletest directly to our build. This defines the gtest and gtest_main targets.
+set(GTEST_SOURCE_DIR /usr/src/googletest/ CACHE PATH "Path to the googletest sources. Defaults to /usr/src/googletest. May have to change if your distro places the sources in a different folder.")
+add_subdirectory(
+	${GTEST_SOURCE_DIR}
+	googletest-bin
+	EXCLUDE_FROM_ALL
+)
+include_directories(${GTEST_SOURCE_DIR}/googletest/include)
+
+# Now simply link against gtest or gtest_main as needed
+add_executable(reef_test
+	test/main.cpp
+	test/test_graph.cpp
+	src/graph.cpp
+)
+target_include_directories(reef_test PUBLIC test)
+target_compile_definitions(reef_test PUBLIC __UNIT_TESTING__)
+target_link_libraries(reef_test gtest_main)
+
+# Setup target to run the tests
+enable_testing()
+add_test(NAME reef_test_suite COMMAND reef_test)
