@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        c_compiler: [ gcc, clang ]
+        include:
+          - c_compiler: gcc
+            cpp_compiler: g++
+
+          - c_compiler: clang
+            cpp_compiler: clang++
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Depedencies
+      run: sudo apt update && sudo apt install qtbase5-dev qttools5-dev libgit2-dev
+
+    - name: Setup Build Directory
+      run: mkdir build
+
+    - name: Configure
+      working-directory: build
+      run: cmake -D CMAKE_C_COMPILER=${{ matrix.c_compiler }} -D CMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} ..
+
+    - name: Make
+      working-directory: build
+      run: make
+

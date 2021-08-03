@@ -20,7 +20,7 @@
 
 #include "graph.h"
 
-constexpr QColor graph_colors[] = {
+const QColor graph_colors[] = {
 	QColor(0, 0, 0),
 	QColor(128, 0, 0),
 	QColor(0, 128, 0),
