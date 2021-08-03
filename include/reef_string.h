@@ -1,5 +1,5 @@
 /*
- * Reef - TUI Client for Git
+ * Reef - Cross Platform Git Client
  * Copyright (C) 2020-2021 Emmanuel Mathi-Amorim
  *
  * This program is free software: you can redistribute it and/or modify
