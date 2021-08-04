@@ -4,10 +4,6 @@ project(reef LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -55,6 +51,9 @@ else()
 endif()
 
 target_link_libraries(reef PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+set_property(TARGET reef PROPERTY AUTOUIC ON)
+set_property(TARGET reef PROPERTY AUTOMOC ON)
+set_property(TARGET reef PROPERTY AUTORCC ON)
 
 # Libgit2 library
 find_package(LibGit2)
@@ -71,29 +70,31 @@ if(WIN32)
 endif()
 
 # Tests with googletest
+set(INCLUDE_TESTS OFF CACHE BOOL "Build the test suite.")
+if(INCLUDE_TESTS)
+	# Prevent overriding the parent project's compiler/linker settings on Windows
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-# Prevent overriding the parent project's compiler/linker settings on Windows
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+	# Add googletest directly to our build. This defines the gtest and gtest_main targets.
+	set(GTEST_SOURCE_DIR /usr/src/googletest/ CACHE PATH "Path to the googletest sources. Defaults to /usr/src/googletest. May have to change if your distro places the sources in a different folder.")
+	add_subdirectory(
+		${GTEST_SOURCE_DIR}
+		googletest-bin
+		EXCLUDE_FROM_ALL
+	)
+        include_directories(${GTEST_SOURCE_DIR}/googletest/include)
 
-# Add googletest directly to our build. This defines the gtest and gtest_main targets.
-set(GTEST_SOURCE_DIR /usr/src/googletest/ CACHE PATH "Path to the googletest sources. Defaults to /usr/src/googletest. May have to change if your distro places the sources in a different folder.")
-add_subdirectory(
-	${GTEST_SOURCE_DIR}
-	googletest-bin
-	EXCLUDE_FROM_ALL
-)
-include_directories(${GTEST_SOURCE_DIR}/googletest/include)
+	# Now simply link against gtest or gtest_main as needed
+	add_executable(reef_test
+		test/main.cpp
+		test/test_graph.cpp
+		src/graph.cpp
+	)
+        target_include_directories(reef_test PUBLIC test)
+	target_compile_definitions(reef_test PUBLIC __UNIT_TESTING__)
+	target_link_libraries(reef_test gtest_main)
 
-# Now simply link against gtest or gtest_main as needed
-add_executable(reef_test
-	test/main.cpp
-	test/test_graph.cpp
-	src/graph.cpp
-)
-target_include_directories(reef_test PUBLIC test)
-target_compile_definitions(reef_test PUBLIC __UNIT_TESTING__)
-target_link_libraries(reef_test gtest_main)
-
-# Setup target to run the tests
-enable_testing()
-add_test(NAME reef_test_suite COMMAND reef_test)
+	# Setup target to run the tests
+	enable_testing()
+	add_test(NAME reef_test_suite COMMAND reef_test)
+endif()
