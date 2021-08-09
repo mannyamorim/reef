@@ -54,6 +54,9 @@ target_link_libraries(reef PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 set_property(TARGET reef PROPERTY AUTOUIC ON)
 set_property(TARGET reef PROPERTY AUTOMOC ON)
 set_property(TARGET reef PROPERTY AUTORCC ON)
+install(TARGETS reef CONFIGURATIONS Release RUNTIME DESTINATION bin)
+install(FILES ${CMAKE_SOURCE_DIR}/data/ca.amorim.reef.desktop DESTINATION share/applications)
+install(FILES ${CMAKE_SOURCE_DIR}/data/ca.amorim.reef.appdata.xml DESTINATION share/metainfo)
 
 # Libgit2 library
 find_package(LibGit2)

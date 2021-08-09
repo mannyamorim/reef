@@ -1,0 +1,28 @@
+app-id: ca.amorim.reef
+runtime: org.kde.Platform
+runtime-version: '5.15'
+sdk: org.kde.Sdk
+command: reef
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --filesystem=host
+  - --device=dri
+modules:
+  - name: libgit2
+    buildsystem: cmake
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_CLAR=OFF
+    sources:
+      - type: archive
+        url: https://github.com/libgit2/libgit2/archive/refs/tags/v1.1.1.tar.gz
+        sha256: 13a525373f64c711a00a058514d890d1512080265f98e0935ab279393f21a620
+  - name: reef
+    buildsystem: cmake
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: dir
+        path: .

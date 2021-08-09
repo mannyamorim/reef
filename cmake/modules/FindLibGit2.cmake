@@ -38,10 +38,6 @@ exported library, it must be made available by the package config file.
 Since 1.3.0.
 #]=======================================================================]
 
-include(${CMAKE_CURRENT_LIST_DIR}/ECMFindModuleHelpers.cmake)
-
-ecm_find_package_version_check(LibGit2)
-
 # Use pkg-config to get the directories and then use these values
 # in the FIND_PATH() and FIND_LIBRARY() calls
 find_package(PkgConfig QUIET)

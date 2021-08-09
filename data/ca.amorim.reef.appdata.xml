@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2021 Emmanuel Mathi-Amorim -->
+<component type="desktop-application">
+  <id>ca.amorim.reef</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>Reef Git Client</name>
+  <summary>QT based GUI Git Client</summary>
+
+  <description>
+    <p>
+      Browse your Git repositories in a fast and responive GUI client.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">ca.amorim.reef.desktop</launchable>
+
+  <provides>
+    <binary>reef</binary>
+  </provides>
+</component>

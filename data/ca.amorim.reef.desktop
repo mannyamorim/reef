@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Reef
+Comment=GUI Git Client
+Exec=reef
+Terminal=false
+Categories=Development;
