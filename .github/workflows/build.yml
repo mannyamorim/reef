@@ -47,3 +47,38 @@ jobs:
       working-directory: build
       run: ctest --verbose
 
+  build-windows:
+
+    runs-on: ubuntu-20.04
+    container:
+      image: mannyamorim/reef-windows-build-env
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Build Directory
+      run: mkdir build
+
+    - name: Configure
+      working-directory: build
+      run: x86_64-w64-mingw32.shared.posix-cmake -D CMAKE_BUILD_TYPE=Release ..
+
+    - name: Make
+      working-directory: build
+      run: make
+
+    - name: Prepare Depedencies
+      working-directory: build
+      run: |
+        /opt/mxe/tools/copydlldeps.sh -c -d . -S "/opt/mxe/usr/x86_64-w64-mingw32.shared.posix/bin/ /opt/mxe/usr/x86_64-w64-mingw32.shared.posix/qt5/bin/" -f reef.exe
+        mkdir platforms styles
+        cp /opt/mxe/usr/x86_64-w64-mingw32.shared.posix/qt5/plugins/platforms/qwindows.dll ./platforms/
+        cp /opt/mxe/usr/x86_64-w64-mingw32.shared.posix/qt5/plugins/styles/* ./styles/
+        zip -r reef-win64.zip *.exe *.dll platforms styles
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: win64-release
+        path: build/reef-win64.zip
+
