@@ -1,0 +1,15 @@
+Source: reef
+Section: vcs
+Priority: optional
+Maintainer: Emmanuel Mathi-Amorim <manny@amorim.ca>
+Build-Depends: cmake, debhelper (>=12~), qtbase5-dev, qttools5-dev, libgit2-dev, googletest
+Standards-Version: 4.3.0
+Homepage: https://github.com/mannyamorim/reef
+
+Package: reef
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Enhances: git
+Description: GUI Git Client
+ View your Git repositories interactively in a fast and responsive GUI client.
