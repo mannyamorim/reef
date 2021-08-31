@@ -16,18 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <cstring>
-
-#include "gtest/gtest.h"
+#include <QTest>
 
 #include "graph.h"
-
-/* returns the number of elements in the array */
-template<typename T, size_t size>
-constexpr size_t count_of(T(&)[size])
-{
-	return size;
-}
 
 char32_t test_line_drawing_chars[] = {
 	U' ', /* 00 = G_EMPTY                              */
@@ -54,711 +45,298 @@ char32_t test_line_drawing_chars[] = {
 	U'I', /* 17 = G_INITIAL                            */
 };
 
-/* fixture for testing methods of the graph class */
-class graph_test_fxt : public testing::Test
+/* structure for holding instructions for one step of the graph test case */
+struct test_graph_step
 {
-protected:
-	graph_list glist;
-	graph_char buf[preferences::max_line_length];
-	char32_t decoded_buf[preferences::max_line_length];
+	std::unordered_set<unsigned int> duplicate_ids;
+	std::vector<unsigned int> new_parent_ids;
+	const unsigned int id_of_commit;
+	const unsigned int num_parents;
+	const char32_t *expected;
 
-	void run_graph_test(
-		std::unordered_set<unsigned int> &&duplicate_ids,
-		std::vector<unsigned int> &&new_parent_ids,
-		const unsigned int id_of_commit,
-		const unsigned int num_parents,
-		const char32_t *expected)
+	test_graph_step(std::unordered_set<unsigned int> &&duplicate_ids,
+			std::vector<unsigned int> &&new_parent_ids,
+			const unsigned int id_of_commit,
+			const unsigned int num_parents,
+			const char32_t *expected) :
+		duplicate_ids(std::move(duplicate_ids)),
+		new_parent_ids(std::move(new_parent_ids)),
+		id_of_commit(id_of_commit),
+		num_parents(num_parents),
+		expected(expected)
+	{}
+};
+
+Q_DECLARE_METATYPE(std::vector<test_graph_step>)
+
+/* class for executing the graph tests */
+class test_graph : public QObject
+{
+	Q_OBJECT
+
+private:
+	/* execute one step of the graph test case */
+	void run_graph_test_step(graph_list &glist, test_graph_step &step)
 	{
 		commit_graph_info graph_info;
-		graph_info.duplicate_ids = std::move(duplicate_ids);
-		graph_info.new_parent_ids = std::move(new_parent_ids);
-		graph_info.id_of_commit = id_of_commit;
-		graph_info.num_parents = num_parents;
+		graph_info.duplicate_ids = std::move(step.duplicate_ids);
+		graph_info.new_parent_ids = std::move(step.new_parent_ids);
+		graph_info.id_of_commit = step.id_of_commit;
+		graph_info.num_parents = step.num_parents;
 		graph_info.num_duplicates = graph_info.duplicate_ids.size();
 
+		graph_char buf[preferences::max_line_length];
 		size_t graph_size = glist.compute_graph(graph_info, buf);
 
+		char32_t decoded_buf[preferences::max_line_length];
 		for (size_t i = 0; i < graph_size; i++)
 			decoded_buf[i] = test_line_drawing_chars[buf[i].flags];
 
-		size_t expected_size = std::char_traits<char32_t>::length(expected);
-		EXPECT_EQ(graph_size, expected_size);
-		EXPECT_EQ(memcmp(decoded_buf, expected, expected_size * sizeof(char32_t)), 0);
+		size_t expected_size = std::char_traits<char32_t>::length(step.expected);
+		QCOMPARE(graph_size, expected_size);
+		QCOMPARE(memcmp(decoded_buf, step.expected, expected_size * sizeof(char32_t)), 0);
+	}
+
+private slots:
+	/* define all of the graph test cases */
+	void run_graph_test_data()
+	{
+		QTest::addColumn<std::vector<test_graph_step>>("steps");
+
+		/* basic test of the compute_graph method */
+		QTest::newRow("test_single_commit") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({}, {}, 1, 1, U"• "),
+		});
+
+		/* test initial commit
+		 * •
+		 * │ •
+		 * I │
+		 */
+		QTest::newRow("test_initial_commit") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({}, {}, 1, 1, U"• "),
+			test_graph_step({}, {}, 2, 1, U"│ • "),
+			test_graph_step({}, {}, 1, 0, U"I │ "),
+		});
+
+		/* test new branch
+		 * •
+		 * │ •
+		 * • │
+		 */
+		QTest::newRow("test_new_branch") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({}, {}, 1, 1, U"• "),
+			test_graph_step({}, {}, 2, 1, U"│ • "),
+			test_graph_step({}, {}, 1, 1, U"• │ "),
+		});
+
+		/* test basic merge
+		 * •
+		 * •─┐
+		 * │ •
+		 */
+		QTest::newRow("test_basic_merge") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({}, {},    1, 1, U"• "),
+			test_graph_step({}, { 2 }, 1, 2, U"•─┐ "),
+			test_graph_step({}, {},    2, 1, U"│ • "),
+		});
+
+		/* test basic duplicate
+		 * •
+		 * │ •
+		 * •─┘
+		 */
+		QTest::newRow("test_basic_duplicate") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {}, 1, 1, U"• "),
+			test_graph_step({},    {}, 2, 1, U"│ • "),
+			test_graph_step({ 2 }, {}, 1, 1, U"•─┘ "),
+		});
+
+		/* test 3 head merge
+		 * •─┬─┐
+		 * │ • │
+		 * │ │ •
+		 */
+		QTest::newRow("test_3_head_merge") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({}, { 2, 3 }, 1, 3, U"•─┬─┐ "),
+			test_graph_step({}, {},       2, 1, U"│ • │ "),
+			test_graph_step({}, {},       3, 1, U"│ │ • "),
+		});
+
+		/* test 3 duplicate
+		 * •
+		 * │ •
+		 * │ │ •
+		 * •─┴─┘
+		 */
+		QTest::newRow("test_3_duplicate") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},       {}, 1, 1, U"• "),
+			test_graph_step({},       {}, 2, 1, U"│ • "),
+			test_graph_step({},       {}, 3, 1, U"│ │ • "),
+			test_graph_step({ 1, 3 }, {}, 2, 1, U"•─┴─┘ "),
+		});
+
+		/* test 3 way duplicate and merge
+		 * •─┬─┐
+		 * │ • │
+		 * │ │ •
+		 * •─┼─┤
+		 * │ • │
+		 * │ │ •
+		 */
+		QTest::newRow("test_3_head_merge_and_duplicate") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},       { 2, 3 }, 1, 3, U"•─┬─┐ "),
+			test_graph_step({},       {},       2, 1, U"│ • │ "),
+			test_graph_step({},       {},       3, 1, U"│ │ • "),
+			test_graph_step({ 1, 3 }, { 4, 5 }, 2, 3, U"•─┼─┤ "),
+			test_graph_step({},       {},       4, 1, U"│ • │ "),
+			test_graph_step({},       {},       5, 1, U"│ │ • "),
+		});
+
+		/* test merge through a branch
+		 * •
+		 * │ •
+		 * •─│─┐
+		 * │ │ •
+		 * •─│─┘
+		 */
+		QTest::newRow("test_merge_through_a_branch") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {},    1, 1, U"• "),
+			test_graph_step({},    {},    2, 1, U"│ • "),
+			test_graph_step({},    { 3 }, 1, 2, U"•─│─┐ "),
+			test_graph_step({},    {},    3, 1, U"│ │ • "),
+			test_graph_step({ 1 }, {},    3, 1, U"•─│─┘ "),
+		});
+
+		/* test merge with empty space
+		 * •
+		 * │ •
+		 * │ │ •
+		 * •─┘ │
+		 * •─┐ │
+		 */
+		QTest::newRow("test_merge_with_empty_space") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {},    1, 1, U"• "),
+			test_graph_step({},    {},    2, 1, U"│ • "),
+			test_graph_step({},    {},    3, 1, U"│ │ • "),
+			test_graph_step({ 2 },    {}, 1, 1, U"•─┘ │ "),
+			test_graph_step({},    { 4 }, 1, 2, U"•─┐ │ "),
+		});
+
+		/* test basic collapse
+		 * •
+		 * │ •
+		 * │ │ •
+		 * •─┘ │
+		 * • ┌─┘
+		 */
+		QTest::newRow("test_basic_collapse") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {}, 1, 1, U"• "),
+			test_graph_step({},    {}, 2, 1, U"│ • "),
+			test_graph_step({},    {}, 3, 1, U"│ │ • "),
+			test_graph_step({ 2 }, {}, 1, 1, U"•─┘ │ "),
+			test_graph_step({},    {}, 1, 1, U"• ┌─┘ "),
+		});
+
+		/* test double collapse
+		 * •
+		 * │ •
+		 * │ │ •
+		 * │ │ │ •
+		 * •─┘ │ │
+		 * • ┌─┘ │
+		 * • │ ┌─┘
+		 */
+		QTest::newRow("test_double_collapse") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {}, 1, 1, U"• "),
+			test_graph_step({},    {}, 2, 1, U"│ • "),
+			test_graph_step({},    {}, 3, 1, U"│ │ • "),
+			test_graph_step({},    {}, 4, 1, U"│ │ │ • "),
+			test_graph_step({ 2 }, {}, 1, 1, U"•─┘ │ │ "),
+			test_graph_step({},    {}, 1, 1, U"• ┌─┘ │ "),
+			test_graph_step({},    {}, 1, 1, U"• │ ┌─┘ "),
+		});
+
+		/* test long collapse
+		 * •
+		 * │ •
+		 * │ │ •
+		 * │ │ │ •
+		 * •─┴─┘ │
+		 * • ┌───┘
+		 */
+		QTest::newRow("test_long_collapse") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},       {}, 1, 1, U"• "),
+			test_graph_step({},       {}, 2, 1, U"│ • "),
+			test_graph_step({},       {}, 3, 1, U"│ │ • "),
+			test_graph_step({},       {}, 4, 1, U"│ │ │ • "),
+			test_graph_step({ 2, 3 }, {}, 1, 1, U"•─┴─┘ │ "),
+			test_graph_step({},       {}, 1, 1, U"• ┌───┘ "),
+		});
+
+		/* test commit collapse
+		 * •
+		 * │ •
+		 * │ │ •
+		 * │ │ │ •
+		 * •─┴─┘ │
+		 * │ •───┘
+		 */
+		QTest::newRow("test_commit_collapse") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},       {}, 1, 1, U"• "),
+			test_graph_step({},       {}, 2, 1, U"│ • "),
+			test_graph_step({},       {}, 3, 1, U"│ │ • "),
+			test_graph_step({},       {}, 4, 1, U"│ │ │ • "),
+			test_graph_step({ 2, 3 }, {}, 1, 1, U"•─┴─┘ │ "),
+			test_graph_step({},       {}, 4, 1, U"│ •───┘ "),
+		});
+
+		/* test blocked collapse
+		 * •
+		 * │ •
+		 * │ │ •
+		 * │ │ │ •
+		 * •─┘ │ │
+		 * •───│─┘
+		 * • ┌─┘
+		 */
+		QTest::newRow("test_blocked_collapse") << std::vector<test_graph_step>({
+			/* duplicate_ids, new_parent_ids, id_of_commit, num_parents, expected_string */
+			test_graph_step({},    {}, 1, 1, U"• "),
+			test_graph_step({},    {}, 2, 1, U"│ • "),
+			test_graph_step({},    {}, 3, 1, U"│ │ • "),
+			test_graph_step({},    {}, 4, 1, U"│ │ │ • "),
+			test_graph_step({ 2 }, {}, 1, 1, U"•─┘ │ │ "),
+			test_graph_step({ 4 }, {}, 1, 1, U"•───│─┘ "),
+			test_graph_step({},    {}, 1, 1, U"• ┌─┘ "),
+		});
+	}
+
+	/* execute the graph test case */
+	void run_graph_test()
+	{
+		QFETCH(std::vector<test_graph_step>, steps);
+
+		graph_list glist;
+
+		for (test_graph_step &step : steps)
+			run_graph_test_step(glist, step);
 	}
 };
 
-/* basic test of the compute_graph method */
-TEST_F(graph_test_fxt, test_single_commit)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-}
-
-/* test initial commit
- * •
- * │ •
- * I │
- */
-TEST_F(graph_test_fxt, test_initial_commit)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		0,	/* num_parents */
-		U"I │ "
-	);
-}
-
-/* test new branch
- * •
- * │ •
- * • │
- */
-TEST_F(graph_test_fxt, test_new_branch)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• │ "
-	);
-}
-
-/* test basic merge
- * •
- * •─┐
- * │ •
- */
-TEST_F(graph_test_fxt, test_basic_merge)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{ 2 },	/* new_parent_ids */
-		1,	/* id_of_commit */
-		2,	/* num_parents */
-		U"•─┐ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-}
-
-/* test basic duplicate
- * •
- * │ •
- * •─┘
- */
-TEST_F(graph_test_fxt, test_basic_duplicate)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{ 2 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─┘ "
-	);
-}
-
-/* test 3 head merge
- * •─┬─┐
- * │ • │
- * │ │ •
- */
-TEST_F(graph_test_fxt, test_3_head_merge)
-{
-	run_graph_test(
-		{},		/* duplicate_ids */
-		{ 2, 3 },	/* new_parent_ids */
-		1,		/* id_of_commit */
-		3,		/* num_parents */
-		U"•─┬─┐ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-}
-
-/* test 3 duplicate
- * •
- * │ •
- * │ │ •
- * •─┴─┘
- */
-TEST_F(graph_test_fxt, test_3_duplicate)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{ 1, 3 },	/* duplicate_ids */
-		{},		/* new_parent_ids */
-		2,		/* id_of_commit */
-		1,		/* num_parents */
-		U"•─┴─┘ "
-	);
-}
-
-/* test 3 way duplicate and merge
- * •─┬─┐
- * │ • │
- * │ │ •
- * •─┼─┤
- * │ • │
- * │ │ •
- */
-TEST_F(graph_test_fxt, test_3_head_merge_and_duplicate)
-{
-	run_graph_test(
-		{},		/* duplicate_ids */
-		{ 2, 3 },	/* new_parent_ids */
-		1,		/* id_of_commit */
-		3,		/* num_parents */
-		U"•─┬─┐ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{ 1, 3 },	/* duplicate_ids */
-		{ 4, 5 },	/* new_parent_ids */
-		2,		/* id_of_commit */
-		3,		/* num_parents */
-		U"•─┼─┤ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		5,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-}
-
-/* test merge through a branch
- * •
- * │ •
- * •─│─┐
- * │ │ •
- * •─│─┘
- */
-TEST_F(graph_test_fxt, test_merge_through_a_branch)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{ 3 },	/* new_parent_ids */
-		1,	/* id_of_commit */
-		2,	/* num_parents */
-		U"•─│─┐ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{ 1 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─│─┘ "
-	);
-}
-
-/* test merge with empty space
- * •
- * │ •
- * │ │ •
- * •─┘ │
- * •─┐ │
- */
-TEST_F(graph_test_fxt, test_merge_with_empty_space)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{ 2 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─┘ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{ 4 },	/* new_parent_ids */
-		1,	/* id_of_commit */
-		2,	/* num_parents */
-		U"•─┐ │ "
-	);
-}
-
-/* test basic collapse
- * •
- * │ •
- * │ │ •
- * •─┘ │
- * • ┌─┘
- */
-TEST_F(graph_test_fxt, test_basic_collapse)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{ 2 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─┘ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• ┌─┘ "
-	);
-}
-
-/* test double collapse
- * •
- * │ •
- * │ │ •
- * │ │ │ •
- * •─┘ │ │
- * • ┌─┘ │
- * • │ ┌─┘
- */
-TEST_F(graph_test_fxt, test_double_collapse)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ │ • "
-	);
-
-	run_graph_test(
-		{ 2 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─┘ │ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• ┌─┘ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• │ ┌─┘ "
-	);
-}
-
-/* test long collapse
- * •
- * │ •
- * │ │ •
- * │ │ │ •
- * •─┴─┘ │
- * • ┌───┘
- */
-TEST_F(graph_test_fxt, test_long_collapse)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ │ • "
-	);
-
-	run_graph_test(
-		{ 2, 3 },	/* duplicate_ids */
-		{},		/* new_parent_ids */
-		1,		/* id_of_commit */
-		1,		/* num_parents */
-		U"•─┴─┘ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• ┌───┘ "
-	);
-}
-
-/* test commit collapse
- * •
- * │ •
- * │ │ •
- * │ │ │ •
- * •─┴─┘ │
- * │ •───┘
- */
-TEST_F(graph_test_fxt, test_commit_collapse)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ │ • "
-	);
-
-	run_graph_test(
-		{ 2, 3 },	/* duplicate_ids */
-		{},		/* new_parent_ids */
-		1,		/* id_of_commit */
-		1,		/* num_parents */
-		U"•─┴─┘ │ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ •───┘ "
-	);
-}
-
-/* test blocked collapse
- * •
- * │ •
- * │ │ •
- * │ │ │ •
- * •─┘ │ │
- * •───│─┘
- * • ┌─┘
- */
-TEST_F(graph_test_fxt, test_blocked_collapse)
-{
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		2,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		3,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ • "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		4,	/* id_of_commit */
-		1,	/* num_parents */
-		U"│ │ │ • "
-	);
-
-	run_graph_test(
-		{ 2 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•─┘ │ │ "
-	);
-
-	run_graph_test(
-		{ 4 },	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"•───│─┘ "
-	);
-
-	run_graph_test(
-		{},	/* duplicate_ids */
-		{},	/* new_parent_ids */
-		1,	/* id_of_commit */
-		1,	/* num_parents */
-		U"• ┌─┘ "
-	);
-}
+QTEST_MAIN(test_graph)
+#include "test_graph.moc"

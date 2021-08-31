@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools Test REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools Test REQUIRED)
 
 set(TS_FILES
 	translation/reef_en_CA.ts
@@ -72,30 +72,17 @@ if(WIN32)
 	set_target_properties(reef PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-# Tests with googletest
+# Tests with QTest
 set(INCLUDE_TESTS OFF CACHE BOOL "Build the test suite.")
 if(INCLUDE_TESTS)
-	# Prevent overriding the parent project's compiler/linker settings on Windows
-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-	# Add googletest directly to our build. This defines the gtest and gtest_main targets.
-	set(GTEST_SOURCE_DIR /usr/src/googletest/ CACHE PATH "Path to the googletest sources. Defaults to /usr/src/googletest. May have to change if your distro places the sources in a different folder.")
-	add_subdirectory(
-		${GTEST_SOURCE_DIR}
-		googletest-bin
-		EXCLUDE_FROM_ALL
-	)
-        include_directories(${GTEST_SOURCE_DIR}/googletest/include)
-
-	# Now simply link against gtest or gtest_main as needed
 	add_executable(reef_test
-		test/main.cpp
 		test/test_graph.cpp
 		src/graph.cpp
 	)
-        target_include_directories(reef_test PUBLIC test)
+	target_include_directories(reef_test PUBLIC test)
 	target_compile_definitions(reef_test PUBLIC __UNIT_TESTING__)
-	target_link_libraries(reef_test gtest_main)
+	target_link_libraries(reef_test PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+	set_property(TARGET reef_test PROPERTY AUTOMOC ON)
 
 	# Setup target to run the tests
 	enable_testing()
