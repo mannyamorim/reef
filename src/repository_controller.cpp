@@ -149,7 +149,7 @@ void repository_controller::reload_commits()
 	clist.initialize(refs);
 	glist.initialize();
 
-	clist_model.beginRemoveRows(QModelIndex(), 0, clist_items.size());
+	clist_model.beginRemoveRows(QModelIndex(), 0, clist_items.size() - 1);
 
 	clist_items.clear();
 	block_alloc.clear();
