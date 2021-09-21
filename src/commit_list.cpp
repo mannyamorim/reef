@@ -101,7 +101,7 @@ commit_list::commit_list(const ref_map &refs, const git::repository &repo, const
 	initialize(refs);
 }
 
-void commit_list::bfs(int requested_depth)
+void commit_list::bfs(size_t requested_depth)
 {
 	while (!bfs_queue.empty() && bfs_queue.front()->depth <= requested_depth) {
 		graph_node *node = bfs_queue.front();
@@ -239,7 +239,7 @@ void commit_list::insert_parents(const node &latest_node, commit_graph_info &gra
 		std::push_heap(clist.begin(), clist.end());
 	}
 
-	for (int i = 1; i < graph.num_parents; i++) {
+	for (size_t i = 1; i < graph.num_parents; i++) {
 		/* load_parent */
 		graph_node *node = latest_node.graph_node_ptr->parents[i];
 

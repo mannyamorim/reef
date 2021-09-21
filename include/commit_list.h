@@ -101,7 +101,7 @@ private:
 	void insert_parents(const node &latest_node, commit_graph_info &graph);
 
 	void initialize_bfs_queue(const ref_map &refs);
-	void bfs(int requested_depth);
+	void bfs(size_t requested_depth);
 	void fix_commit_times(graph_node *node, const git_time_t parent_time);
 };
 
