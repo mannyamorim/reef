@@ -27,10 +27,19 @@
 #include <functional>
 #include <string>
 
+#include <QVersionNumber>
+
 #include <git2.h>
 
 namespace git
 {
+	inline const QVersionNumber version()
+	{
+		int major, minor, rev;
+		git_libgit2_version(&major, &minor, &rev);
+		return QVersionNumber(major, minor, rev);
+	}
+
 	class libgit_error : public std::exception
 	{
 	public:

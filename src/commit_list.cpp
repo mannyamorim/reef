@@ -274,7 +274,7 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 
 	bfs(latest_node.graph_node_ptr->depth + prefs.graph_approximation_factor);
 
-	return latest_node.graph_node_ptr->commit;
+	return std::move(latest_node.graph_node_ptr->commit);
 }
 
 bool commit_list::empty()

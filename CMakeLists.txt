@@ -17,6 +17,8 @@ set(TS_FILES
 )
 
 set(PROJECT_SOURCES
+	src/about_window.cpp
+	src/about_window.ui
 	src/commit_list.cpp
 	src/graph.cpp
 	src/graph_delegate.cpp
@@ -25,6 +27,7 @@ set(PROJECT_SOURCES
 	src/main_window.ui
 	src/ref_map.cpp
 	src/repository_controller.cpp
+	include/about_window.h
 	include/block_allocator.h
 	include/commit_list.h
 	include/cpp_git.h

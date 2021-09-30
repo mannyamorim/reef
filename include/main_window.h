@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include "about_window.h"
 #include "graph_delegate.h"
 #include "repository_controller.h"
 
@@ -41,12 +42,14 @@ public:
 public slots:
 	void handle_open_repository();
 	void handle_close_repository();
+	void handle_about();
 
 private:
 	Ui::main_window *ui;
 
 	graph_delegate gdelegate;
 	std::unique_ptr<repository_controller> repo_ctrl;
+	std::unique_ptr<about_window> about_dialog;
 
 	void load_repo(std::string dir);
 };

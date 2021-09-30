@@ -20,15 +20,8 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define REEF_VER_MAJOR 0
-#define REEF_VER_MINOR 1
-#define REEF_VER_PATCH 0
+#include <QVersionNumber>
 
-#define _STRINGIZE(x) #x
-#define STRINGIZE(x) _STRINGIZE(x)
-
-#define REEF_VER_DOT STRINGIZE(REEF_VER_MAJOR) "." \
-                     STRINGIZE(REEF_VER_MINOR) "." \
-                     STRINGIZE(REEF_VER_PATCH)
+const QVersionNumber reef_version(0, 1, 0);
 
 #endif /* VERSION_H */

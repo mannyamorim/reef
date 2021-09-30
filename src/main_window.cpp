@@ -31,6 +31,7 @@ main_window::main_window(QWidget *parent)
 	connect(ui->action_open_repository, &QAction::triggered, this, &main_window::handle_open_repository);
 	connect(ui->action_close_repository, &QAction::triggered, this, &main_window::handle_close_repository);
 	connect(ui->action_exit, &QAction::triggered, qApp, QApplication::quit);
+	connect(ui->action_about, &QAction::triggered, this, &main_window::handle_about);
 	ui->commit_table->setItemDelegateForColumn(0, &gdelegate);
 }
 
@@ -75,4 +76,10 @@ void main_window::load_repo(std::string dir)
 	qApp->processEvents();
 
 	repo_ctrl->display_commits();
+}
+
+void main_window::handle_about()
+{
+	about_dialog = std::make_unique<about_window>(this);
+	about_dialog->show();
 }

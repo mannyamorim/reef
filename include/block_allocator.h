@@ -53,7 +53,7 @@ public:
 private:
 	std::vector<std::unique_ptr<uint8_t[]>> blocks;
 
-	constexpr static size_t BLOCK_SIZE = 65536;
+	constexpr static size_t BLOCK_SIZE = 256 * 1024;
 
 	int block_usage = 0;	/* number of bytes of the current block that has been allocated */
 	int curr_block = -1;	/* number of the current block */
