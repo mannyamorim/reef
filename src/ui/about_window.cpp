@@ -1,8 +1,8 @@
 #include "about_window.h"
 #include "ui_about_window.h"
 
-#include "cpp_git.h"
-#include "version.h"
+#include "compat/cpp_git.h"
+#include "util/version.h"
 
 about_window::about_window(QWidget *parent) :
 	QDialog(parent),

@@ -21,9 +21,10 @@
 
 #include <memory>
 
+#include "controller/repository_controller.h"
+
 #include "about_window.h"
 #include "graph_delegate.h"
-#include "repository_controller.h"
 
 #include <QMainWindow>
 

@@ -4,44 +4,44 @@
 <context>
     <name>about_window</name>
     <message>
-        <location filename="../src/about_window.ui" line="14"/>
+        <location filename="../src/ui/about_window.ui" line="14"/>
         <source>About Reef</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="37"/>
+        <location filename="../src/ui/about_window.ui" line="37"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="43"/>
+        <location filename="../src/ui/about_window.ui" line="43"/>
         <source>Reef Version:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="50"/>
-        <location filename="../src/about_window.ui" line="64"/>
-        <location filename="../src/about_window.ui" line="78"/>
+        <location filename="../src/ui/about_window.ui" line="50"/>
+        <location filename="../src/ui/about_window.ui" line="64"/>
+        <location filename="../src/ui/about_window.ui" line="78"/>
         <source>TextLabel</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="57"/>
+        <location filename="../src/ui/about_window.ui" line="57"/>
         <source>QT Version:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="71"/>
+        <location filename="../src/ui/about_window.ui" line="71"/>
         <source>Libgit2 Version:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="86"/>
+        <location filename="../src/ui/about_window.ui" line="86"/>
         <source>License</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/about_window.ui" line="92"/>
+        <location filename="../src/ui/about_window.ui" line="92"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;title&gt;GNU General Public License v3.0 - GNU Project - Free Software Foundation (FSF)&lt;/title&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
@@ -190,17 +190,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>commit_model</name>
     <message>
-        <location filename="../src/repository_controller.cpp" line="234"/>
+        <location filename="../src/controller/repository_controller.cpp" line="235"/>
         <source>Graph</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="236"/>
+        <location filename="../src/controller/repository_controller.cpp" line="237"/>
         <source>Refs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/repository_controller.cpp" line="238"/>
+        <location filename="../src/controller/repository_controller.cpp" line="239"/>
         <source>Summary</source>
         <translation type="unfinished"></translation>
     </message>
@@ -208,38 +208,38 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>main_window</name>
     <message>
-        <location filename="../src/main_window.ui" line="14"/>
+        <location filename="../src/ui/main_window.ui" line="14"/>
         <source>Reef</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="53"/>
+        <location filename="../src/ui/main_window.ui" line="53"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="62"/>
+        <location filename="../src/ui/main_window.ui" line="62"/>
         <source>Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="72"/>
-        <location filename="../src/main_window.cpp" line="45"/>
+        <location filename="../src/ui/main_window.ui" line="72"/>
+        <location filename="../src/ui/main_window.cpp" line="45"/>
         <source>Open Repository</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="77"/>
+        <location filename="../src/ui/main_window.ui" line="77"/>
         <source>Close Repository</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="82"/>
+        <location filename="../src/ui/main_window.ui" line="82"/>
         <source>Exit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main_window.ui" line="87"/>
+        <location filename="../src/ui/main_window.ui" line="87"/>
         <source>About</source>
         <translation type="unfinished"></translation>
     </message>

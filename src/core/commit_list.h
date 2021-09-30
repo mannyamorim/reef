@@ -26,8 +26,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "cpp_git.h"
-#include "preferences.h"
+#include "compat/cpp_git.h"
+#include "util/preferences.h"
+
 #include "ref_map.h"
 
 /* structure for storing information needed to produce the commit graph */

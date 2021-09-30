@@ -17,33 +17,33 @@ set(TS_FILES
 )
 
 set(PROJECT_SOURCES
-	src/about_window.cpp
-	src/about_window.ui
-	src/commit_list.cpp
-	src/graph.cpp
-	src/graph_delegate.cpp
+	src/compat/cpp_git.h
+	src/controller/repository_controller.cpp
+	src/controller/repository_controller.h
+	src/core/commit_list.cpp
+	src/core/commit_list.h
+	src/core/graph.cpp
+	src/core/graph.h
+	src/core/ref_map.cpp
+	src/core/ref_map.h
+	src/ui/about_window.cpp
+	src/ui/about_window.h
+	src/ui/about_window.ui
+	src/ui/graph_delegate.cpp
+	src/ui/graph_delegate.h
+	src/ui/main_window.cpp
+	src/ui/main_window.h
+	src/ui/main_window.ui
+	src/util/block_allocator.h
+	src/util/error.h
+	src/util/preferences.h
+	src/util/reef_string.h
+	src/util/version.h
 	src/main.cpp
-	src/main_window.cpp
-	src/main_window.ui
-	src/ref_map.cpp
-	src/repository_controller.cpp
-	include/about_window.h
-	include/block_allocator.h
-	include/commit_list.h
-	include/cpp_git.h
-	include/error.h
-	include/graph.h
-	include/graph_delegate.h
-	include/main_window.h
-	include/preferences.h
-	include/reef_string.h
-	include/ref_map.h
-	include/repository_controller.h
-	include/version.h
 	${TS_FILES}
 )
 
-include_directories(include)
+include_directories(src)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 	qt_add_executable(reef ${PROJECT_SOURCES})
@@ -79,8 +79,8 @@ endif()
 set(INCLUDE_TESTS OFF CACHE BOOL "Build the test suite.")
 if(INCLUDE_TESTS)
 	add_executable(reef_test
-		test/test_graph.cpp
-		src/graph.cpp
+		src/test/test_graph.cpp
+		src/core/graph.cpp
 	)
 	target_include_directories(reef_test PUBLIC test)
 	target_compile_definitions(reef_test PUBLIC __UNIT_TESTING__)

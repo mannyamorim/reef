@@ -23,7 +23,8 @@
 #include <QApplication>
 #include <QFontDatabase>
 
-#include "reef_string.h"
+#include "util/reef_string.h"
+
 #include "repository_controller.h"
 
 repository_controller::repository_controller(std::string &dir, std::function<void(const QString &)> update_status_func) :

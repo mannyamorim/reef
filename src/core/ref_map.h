@@ -26,7 +26,7 @@
 
 #include <git2.h>
 
-#include "cpp_git.h"
+#include "compat/cpp_git.h"
 
 struct git_oid_ref_hash
 {

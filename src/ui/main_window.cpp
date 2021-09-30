@@ -19,7 +19,7 @@
 #include "main_window.h"
 #include "./ui_main_window.h"
 
-#include "cpp_git.h"
+#include "compat/cpp_git.h"
 
 #include <QFileDialog>
 

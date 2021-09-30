@@ -26,12 +26,12 @@
 #include <QAbstractTableModel>
 #include <QString>
 
-#include "block_allocator.h"
-#include "cpp_git.h"
-#include "commit_list.h"
-#include "graph.h"
-#include "ref_map.h"
-#include "preferences.h"
+#include "compat/cpp_git.h"
+#include "core/commit_list.h"
+#include "core/graph.h"
+#include "core/ref_map.h"
+#include "util/block_allocator.h"
+#include "util/preferences.h"
 
 class repository_controller;
 

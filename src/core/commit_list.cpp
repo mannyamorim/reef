@@ -22,11 +22,12 @@
 #include <cassert>
 #include <vector>
 
+#include "compat/cpp_git.h"
+#include "util/error.h"
+#include "util/preferences.h"
+
 #include "commit_list.h"
-#include "error.h"
-#include "preferences.h"
 #include "ref_map.h"
-#include "cpp_git.h"
 
 commit_list::node::node(graph_node *graph_node_ptr, unsigned int id) :
 	graph_node_ptr(graph_node_ptr),

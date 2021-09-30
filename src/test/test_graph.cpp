@@ -18,7 +18,7 @@
 
 #include <QTest>
 
-#include "graph.h"
+#include "core/graph.h"
 
 char32_t test_line_drawing_chars[] = {
 	U' ', /* 00 = G_EMPTY                              */

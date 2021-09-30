@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "main_window.h"
+#include "ui/main_window.h"
 
 #include <QApplication>
 

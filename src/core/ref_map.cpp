@@ -20,7 +20,8 @@
 
 #include <git2.h>
 
-#include "cpp_git.h"
+#include "compat/cpp_git.h"
+
 #include "ref_map.h"
 
 ref_map::ref_map(const git::repository &repo)

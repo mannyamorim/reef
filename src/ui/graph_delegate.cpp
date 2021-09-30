@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "graph_delegate.h"
+#include "core/graph.h"
 
-#include "graph.h"
+#include "graph_delegate.h"
 
 const QColor graph_colors[] = {
 	QColor(0, 0, 0),
