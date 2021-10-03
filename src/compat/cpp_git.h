@@ -280,6 +280,11 @@ namespace git
 			return git_commit_summary(ptr);
 		}
 
+		const char *message() const
+		{
+			return git_commit_message(ptr);
+		}
+
 		git::commit parent(unsigned int n) const
 		{
 			git_commit *commit;

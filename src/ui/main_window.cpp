@@ -52,7 +52,21 @@ void main_window::handle_close_repository()
 {
 	ui->commit_table->setModel(nullptr);
 	ui->ref_tree->setModel(nullptr);
+	ui->commit_info->setText(QString());
 	repo_ctrl.reset();
+}
+
+void main_window::handle_about()
+{
+	about_dialog = std::make_unique<about_window>(this);
+	about_dialog->show();
+}
+
+void main_window::handle_commit_table_row_changed(const QModelIndex &current, const QModelIndex &previous)
+{
+	(void) previous;
+
+	ui->commit_info->setText(repo_ctrl->get_commit_info_by_row(current.row()));
 }
 
 void main_window::load_repo(std::string dir)
@@ -73,13 +87,9 @@ void main_window::load_repo(std::string dir)
 	ui->commit_table->setModel(repo_ctrl->get_commit_model());
 	ui->ref_tree->setModel(repo_ctrl->get_ref_model());
 
+	connect(ui->commit_table->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &main_window::handle_commit_table_row_changed);
+
 	qApp->processEvents();
 
 	repo_ctrl->display_commits();
-}
-
-void main_window::handle_about()
-{
-	about_dialog = std::make_unique<about_window>(this);
-	about_dialog->show();
 }

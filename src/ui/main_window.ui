@@ -16,25 +16,22 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+     <widget class="QTableView" name="commit_table">
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
       </property>
-      <widget class="QTreeView" name="ref_tree"/>
-      <widget class="QTableView" name="commit_table">
-       <property name="showGrid">
-        <bool>false</bool>
-       </property>
-       <attribute name="horizontalHeaderStretchLastSection">
-        <bool>true</bool>
-       </attribute>
-       <attribute name="verticalHeaderMinimumSectionSize">
-        <number>20</number>
-       </attribute>
-       <attribute name="verticalHeaderDefaultSectionSize">
-        <number>20</number>
-       </attribute>
-      </widget>
+      <property name="showGrid">
+       <bool>false</bool>
+      </property>
+      <attribute name="horizontalHeaderStretchLastSection">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderMinimumSectionSize">
+       <number>20</number>
+      </attribute>
+      <attribute name="verticalHeaderDefaultSectionSize">
+       <number>20</number>
+      </attribute>
      </widget>
     </item>
    </layout>
@@ -67,6 +64,42 @@
    <addaction name="menu_help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="dock_widget_ref_tree">
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Refs</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dock_widget_ref_tree_contents">
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
+      <widget class="QTreeView" name="ref_tree"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dock_widget_commit_info">
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Commit Info</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="docker_widget_commit_info_contents">
+    <layout class="QGridLayout" name="gridLayout_3">
+     <item row="0" column="0">
+      <widget class="QTextBrowser" name="commit_info"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="action_open_repository">
    <property name="text">
     <string>Open Repository</string>

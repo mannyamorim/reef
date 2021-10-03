@@ -48,6 +48,13 @@ QAbstractItemModel *repository_controller::get_ref_model()
 	return &r_model;
 }
 
+QString repository_controller::get_commit_info_by_row(int row)
+{
+	git_oid *oid = &clist_items[row].commit_id;
+	git::commit commit = clist.get_commit_by_id(oid);
+	return QString(commit.message());
+}
+
 void repository_controller::insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map, ref_map::refs_ordered_map::iterator ref_iter)
 {
 	const char *ptr = strchr(ref_name, '/');

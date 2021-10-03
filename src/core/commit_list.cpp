@@ -275,7 +275,15 @@ git::commit commit_list::get_next_commit(commit_graph_info &graph)
 
 	bfs(latest_node.graph_node_ptr->depth + prefs.graph_approximation_factor);
 
-	return std::move(latest_node.graph_node_ptr->commit);
+	return latest_node.graph_node_ptr->commit;
+}
+
+git::commit commit_list::get_commit_by_id(git_oid *oid)
+{
+	if (commits_returned.count(*oid) != 1)
+		throw reef_error("commit not found in returned set");
+
+	return commits_loaded.find(*oid)->second.commit;
 }
 
 bool commit_list::empty()

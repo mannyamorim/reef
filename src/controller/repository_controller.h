@@ -86,6 +86,8 @@ public:
 	QAbstractItemModel *get_commit_model();
 	QAbstractItemModel *get_ref_model();
 
+	QString get_commit_info_by_row(int row);
+
 	void display_refs();
 	void display_commits();
 	void reload_commits();

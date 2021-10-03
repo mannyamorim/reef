@@ -57,6 +57,8 @@ public:
 	/* retrieve the latest commit from the git_commit_list */
 	git::commit get_next_commit(commit_graph_info &graph);
 
+	git::commit get_commit_by_id(git_oid *oid);
+
 	bool empty();
 
 private:
