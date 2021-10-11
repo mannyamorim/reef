@@ -35,6 +35,8 @@ repository_controller::repository_controller(std::string &dir, std::function<voi
 	glist(),
 	clist_model(*this),
 	r_model(*this),
+	diff(nullptr),
+	cfile_model(*this),
 	update_status_func(update_status_func)
 {}
 
@@ -48,11 +50,9 @@ QAbstractItemModel *repository_controller::get_ref_model()
 	return &r_model;
 }
 
-QString repository_controller::get_commit_info_by_row(int row)
+QAbstractItemModel *repository_controller::get_commit_file_model()
 {
-	git_oid *oid = &clist_items[row].commit_id;
-	git::commit commit = clist.get_commit_by_id(oid);
-	return QString(commit.message());
+	return &cfile_model;
 }
 
 void repository_controller::insert_ref(const char *ref_name, ref_item *parent, std::map<QString, ref_item> &map, ref_map::refs_ordered_map::iterator ref_iter)
@@ -165,6 +165,43 @@ void repository_controller::reload_commits()
 	clist_model.endRemoveRows();
 
 	display_commits();
+}
+
+void repository_controller::handle_commit_table_row_changed(const QModelIndex &current, const QModelIndex &previous)
+{
+	(void) previous;
+
+	cfile_model.beginRemoveRows(QModelIndex(), 0, cfile_items.size() - 1);
+	cfile_items.clear();
+	cfile_model.endRemoveRows();
+
+	if (!current.isValid()) {
+		commit_info_text_changed(QString());
+		return;
+	}
+
+	git_oid *oid = &clist_items[current.row()].commit_id;
+	git::commit commit = clist.get_commit_by_id(oid);
+
+	commit_info_text_changed(QString(commit.message()));
+
+	git::tree tree_a = commit.tree();
+	git::tree tree_b(nullptr);
+	if (commit.parentcount() != 0)
+		tree_b = commit.parent(0).tree();
+
+	diff = repo.diff_tree_to_tree(tree_b, tree_a, nullptr);
+
+	const auto file_cb = [this](const git_diff_delta *delta, float progress) {
+		(void) progress;
+
+		cfile_model.beginInsertRows(QModelIndex(), cfile_items.size(), cfile_items.size());
+		cfile_items.push_back(delta);
+		cfile_model.endInsertRows();
+
+		return 0;
+	};
+	diff._foreach(file_cb, nullptr, nullptr, nullptr);
 }
 
 repository_controller::commit_item::commit_item(const git_oid &commit_id, QByteArray &&graph, QString &&refs, QString &&summary) :
@@ -454,4 +491,37 @@ QModelIndex ref_model::parent(const QModelIndex &index) const
 		return QModelIndex();
 	else
 		return createIndex(item->index_in_parent, 0, item->parent);
+}
+
+commit_file_model::commit_file_model(repository_controller &repo_ctrl, QObject *parent) :
+	QAbstractListModel(parent),
+	repo_ctrl(repo_ctrl)
+{}
+
+int commit_file_model::rowCount(const QModelIndex &parent) const
+{
+	(void) parent;
+
+	return repo_ctrl.cfile_items.size();
+}
+
+QVariant commit_file_model::data(const QModelIndex &index, int role) const
+{
+	if (!index.isValid())
+		return QVariant();
+
+	if (role != Qt::DisplayRole)
+		return QVariant();
+
+	const git_diff_delta *delta = repo_ctrl.cfile_items[index.row()];
+	return QString(delta->new_file.path);
+}
+
+QVariant commit_file_model::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	(void)section;
+	(void)orientation;
+	(void)role;
+
+	return QVariant();
 }

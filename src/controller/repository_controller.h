@@ -75,22 +75,47 @@ private:
 	repository_controller &repo_ctrl;
 };
 
-class repository_controller
+class commit_file_model : public QAbstractListModel
+{
+	friend class repository_controller;
+
+	Q_OBJECT
+
+public:
+	commit_file_model(repository_controller &repo_ctrl, QObject *parent = nullptr);
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+	QVariant data(const QModelIndex &index, int role) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+
+private:
+	repository_controller &repo_ctrl;
+};
+
+class repository_controller : public QObject
 {
 	friend class commit_model;
 	friend class ref_model;
+	friend class commit_file_model;
+
+	Q_OBJECT
 
 public:
 	repository_controller(std::string &dir, std::function<void(const QString &)> update_status_func);
 
 	QAbstractItemModel *get_commit_model();
 	QAbstractItemModel *get_ref_model();
-
-	QString get_commit_info_by_row(int row);
+	QAbstractItemModel *get_commit_file_model();
 
 	void display_refs();
 	void display_commits();
 	void reload_commits();
+
+public slots:
+	void handle_commit_table_row_changed(const QModelIndex &current, const QModelIndex &previous);
+
+signals:
+	void commit_info_text_changed(QString text);
 
 private:
 	struct commit_item
@@ -140,6 +165,10 @@ private:
 	std::map<QString, ref_item> ref_items_map;
 	std::vector<std::pair<QString, ref_item>> ref_items_vec;
 	ref_model r_model;
+
+	git::diff diff;
+	std::vector<const git_diff_delta *> cfile_items;
+	commit_file_model cfile_model;
 
 	block_allocator block_alloc;
 

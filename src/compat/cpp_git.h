@@ -130,7 +130,11 @@ namespace git
 			return ptr;
 		}
 
+		using file_callback = std::function<int(const git_diff_delta *, float)>;
+		using binary_callback = std::function<int(const git_diff_delta *, const git_diff_binary *)>;
+		using hunk_callback = std::function<int(const git_diff_delta *, const git_diff_hunk *)>;
 		using line_callback = std::function<int(const git_diff_delta *, const git_diff_hunk *, const git_diff_line *)>;
+
 		void print(git_diff_format_t format, line_callback callback) const
 		{
 			const git_diff_line_cb print_cb = [](const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line, void *payload) {
@@ -139,6 +143,63 @@ namespace git
 			};
 
 			int err = git_diff_print(ptr, format, print_cb, &callback);
+			if (err != 0)
+				throw libgit_error(err);
+		}
+
+		void _foreach(file_callback file_cb, binary_callback binary_cb, hunk_callback hunk_cb, line_callback line_cb) const
+		{
+			/* setup the payload struct */
+			struct payload {
+				file_callback file_cb;
+				binary_callback binary_cb;
+				hunk_callback hunk_cb;
+				line_callback line_cb;
+			};
+
+			payload _payload = {
+				file_cb,
+				binary_cb,
+				hunk_cb,
+				line_cb
+			};
+
+			/* callbacks */
+			git_diff_file_cb _file_cb = nullptr;
+			git_diff_binary_cb _binary_cb = nullptr;
+			git_diff_hunk_cb _hunk_cb = nullptr;
+			git_diff_line_cb _line_cb = nullptr;
+
+			/* file callback is mandatory */
+			_file_cb = [](const git_diff_delta *delta, float progress, void *payload) {
+				const file_callback &_callback = static_cast<struct payload *>(payload)->file_cb;
+				return _callback.operator()(delta, progress);
+			};
+
+			/* binary, hunk, and line callbacks are optional */
+			if (binary_cb) {
+				_binary_cb = [](const git_diff_delta *delta, const git_diff_binary *binary, void *payload) {
+					const binary_callback &_callback = static_cast<struct payload *>(payload)->binary_cb;
+					return _callback.operator()(delta, binary);
+				};
+			}
+
+			if (hunk_cb) {
+				_hunk_cb = [](const git_diff_delta *delta, const git_diff_hunk *hunk, void *payload) {
+					const hunk_callback &_callback = static_cast<struct payload *>(payload)->hunk_cb;
+					return _callback.operator()(delta, hunk);
+				};
+			}
+
+			if (line_cb) {
+				_line_cb = [](const git_diff_delta *delta, const git_diff_hunk *hunk, const git_diff_line *line, void *payload) {
+					const line_callback &_callback = static_cast<struct payload *>(payload)->line_cb;
+					return _callback.operator()(delta, hunk, line);
+				};
+			}
+
+			/* execute */
+			int err = git_diff_foreach(ptr, _file_cb, _binary_cb, _hunk_cb, _line_cb, &_payload);
 			if (err != 0)
 				throw libgit_error(err);
 		}

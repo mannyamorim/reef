@@ -45,8 +45,6 @@ public slots:
 	void handle_close_repository();
 	void handle_about();
 
-	void handle_commit_table_row_changed(const QModelIndex &current, const QModelIndex &previous);
-
 private:
 	Ui::main_window *ui;
 
