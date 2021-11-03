@@ -1,0 +1,37 @@
+name: reef
+base: core20
+version: '0.1'
+summary: QT based client for working with Git repositories
+description: |
+  Browse your Git repository interactively using a fast and responsive GUI.
+
+grade: devel
+confinement: strict
+
+apps:
+  reef:
+    common-id: ca.amorim.reef
+    command: usr/bin/reef
+    desktop: usr/share/applications/ca.amorim.reef.desktop
+    extensions:
+      - kde-neon
+    plugs:
+      - home
+
+parts:
+  reef:
+    plugin: cmake
+    source: .
+    parse-info:
+      - usr/share/metainfo/ca.amorim.reef.appdata.xml
+    build-snaps:
+      - kde-frameworks-5-qt-5-15-core20
+    build-packages:
+      - libgit2-dev
+      - libglvnd-dev
+    stage-packages:
+      - libgit2-28
+    cmake-parameters:
+      - -DKDE_INSTALL_USE_QT_SYS_PATHS=ON
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_BUILD_TYPE=Release
