@@ -44,6 +44,7 @@ public slots:
 	void handle_open_repository();
 	void handle_close_repository();
 	void handle_about();
+	void handle_diff_view_visible(bool visible);
 
 private:
 	Ui::main_window *ui;

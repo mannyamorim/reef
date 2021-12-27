@@ -16,25 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ABOUT_WINDOW_H
-#define ABOUT_WINDOW_H
+#ifndef DESELECTABLE_LIST_VIEW_H
+#define DESELECTABLE_LIST_VIEW_H
 
-#include <QDialog>
+#include <QListView>
+#include <QMouseEvent>
 
-namespace Ui {
-class about_window;
-}
-
-class about_window : public QDialog
+/*!
+ * \class deselectable_list_view
+ * \brief Custom version of QListView which deselects rows when an already selected row is clicked again
+ */
+class deselectable_list_view : public QListView
 {
 	Q_OBJECT
 
 public:
-	explicit about_window(QWidget *parent = nullptr);
-	~about_window();
-
-private:
-	Ui::about_window *ui;
+	deselectable_list_view(QWidget* parent);
+	void mousePressEvent(QMouseEvent *e) override;
 };
 
-#endif // ABOUT_WINDOW_H
+#endif /* DESELECTABLE_LIST_VIEW_H */

@@ -16,25 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ABOUT_WINDOW_H
-#define ABOUT_WINDOW_H
+#include "deselectable_list_view.h"
 
-#include <QDialog>
+deselectable_list_view::deselectable_list_view(QWidget *parent) :
+	QListView(parent)
+{ }
 
-namespace Ui {
-class about_window;
-}
-
-class about_window : public QDialog
+void deselectable_list_view::mousePressEvent(QMouseEvent *event)
 {
-	Q_OBJECT
-
-public:
-	explicit about_window(QWidget *parent = nullptr);
-	~about_window();
-
-private:
-	Ui::about_window *ui;
-};
-
-#endif // ABOUT_WINDOW_H
+	QPoint pos = event->pos();
+	QPersistentModelIndex index = indexAt(pos);
+	QItemSelectionModel *model = selectionModel();
+	if (model->isSelected(index)) {
+		model->clearCurrentIndex();
+		model->clearSelection();
+	} else {
+		QListView::mousePressEvent(event);
+	}
+}

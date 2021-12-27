@@ -2,6 +2,8 @@ add_library(ui OBJECT
 	about_window.cpp
 	about_window.h
 	about_window.ui
+	deselectable_list_view.cpp
+	deselectable_list_view.h
 	graph_delegate.cpp
 	graph_delegate.h
 	main_window.cpp

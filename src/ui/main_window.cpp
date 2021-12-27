@@ -63,6 +63,14 @@ void main_window::handle_about()
 	about_dialog->show();
 }
 
+void main_window::handle_diff_view_visible(bool visible)
+{
+	if (visible)
+		ui->stacked_widget->setCurrentIndex(1);
+	else
+		ui->stacked_widget->setCurrentIndex(0);
+}
+
 void main_window::load_repo(std::string dir)
 {
 	std::function<void(const QString &)> update_status_func = [this] (const QString &message) {
@@ -84,6 +92,9 @@ void main_window::load_repo(std::string dir)
 
 	connect(ui->commit_table->selectionModel(), &QItemSelectionModel::currentRowChanged, &*repo_ctrl, &repository_controller::handle_commit_table_row_changed);
 	connect(&*repo_ctrl, &repository_controller::commit_info_text_changed, ui->commit_info, &QTextBrowser::setText);
+	connect(ui->commit_file_list->selectionModel(), &QItemSelectionModel::currentRowChanged, &*repo_ctrl, &repository_controller::handle_file_list_row_changed);
+	connect(&*repo_ctrl, &repository_controller::diff_view_text_changed, ui->diff_view, &QTextEdit::setText);
+	connect(&*repo_ctrl, &repository_controller::diff_view_visible, this, &main_window::handle_diff_view_visible);
 
 	qApp->processEvents();
 

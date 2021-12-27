@@ -113,9 +113,12 @@ public:
 
 public slots:
 	void handle_commit_table_row_changed(const QModelIndex &current, const QModelIndex &previous);
+	void handle_file_list_row_changed(const QModelIndex &current, const QModelIndex &previous);
 
 signals:
 	void commit_info_text_changed(QString text);
+	void diff_view_text_changed(QString text);
+	void diff_view_visible(bool visible);
 
 private:
 	struct commit_item

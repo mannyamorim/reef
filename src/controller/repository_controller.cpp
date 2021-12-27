@@ -204,6 +204,16 @@ void repository_controller::handle_commit_table_row_changed(const QModelIndex &c
 	diff._foreach(file_cb, nullptr, nullptr, nullptr);
 }
 
+void repository_controller::handle_file_list_row_changed(const QModelIndex &current, const QModelIndex &previous)
+{
+	if (current.isValid()) {
+		diff_view_visible(true);
+		diff_view_text_changed(QString(current.row()));
+	} else {
+		diff_view_visible(false);
+	}
+}
+
 repository_controller::commit_item::commit_item(const git_oid &commit_id, QByteArray &&graph, QString &&refs, QString &&summary) :
 	commit_id(commit_id),
 	graph(std::move(graph)),
