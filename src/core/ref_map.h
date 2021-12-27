@@ -28,8 +28,17 @@
 
 #include "compat/cpp_git.h"
 
+/*!
+ * \struct git_oid_ref_hash
+ * \brief Structure for computing hashes of git_oid
+ */
 struct git_oid_ref_hash
 {
+	/*!
+	 * \brief Compute the hash of a git_oid
+	 * \param x The git_oid to hash
+	 * \return The hash of x
+	 */
 	size_t operator()(const git_oid &x) const
 	{
 		size_t hash = 0;
@@ -39,8 +48,18 @@ struct git_oid_ref_hash
 	}
 };
 
+/*!
+ * \struct git_oid_ref_cmp
+ * \brief Structure for comparing git_oid
+ */
 struct git_oid_ref_cmp
 {
+	/*!
+	 * \brief Compare two git_oids
+	 * \param lhs The first git_oid to compare
+	 * \param rhs The second git_oid to compare
+	 * \return Boolean comparison result
+	 */
 	bool operator()(const git_oid &lhs, const git_oid &rhs) const
 	{
 		for (size_t i = 0; i < GIT_OID_RAWSZ; i++)
@@ -49,12 +68,30 @@ struct git_oid_ref_cmp
 	}
 };
 
+/*!
+ * \class ref_map
+ * \brief Class for keeping track of all of the refs in a repo
+ *
+ * Refs can be accessed through an ordered map by the ref names.
+ * Also through an unordered multimap by the git_oid.
+ * Refs can be activated and de-activated.
+ */
 class ref_map {
 public:
 	ref_map(const git::repository &repo);
 	~ref_map();
 
+	/*!
+	 * \struct char_ptr_cmp
+	 * \brief Structure for comparing c strings by pointer
+	 */
 	struct char_ptr_cmp {
+		/*!
+		 * \brief Compare two c strings by their pointers
+		 * \param lhs The first c string to compare
+		 * \param rhs The second c string to compare
+		 * \return Boolean comparison result
+		 */
 		bool operator()(const char *lhs, const char *rhs) const
 		{
 			return strcmp(lhs, rhs) < 0;
@@ -66,6 +103,11 @@ public:
 	using refs_ordered_map = std::map<const char *, std::pair<git_oid, std::pair<git::reference, bool> *>, char_ptr_cmp>;
 	refs_ordered_map refs_ordered;
 	
+	/*!
+	 * \brief Change the active status of a ref
+	 * \param iter An iterator in the ordered ref map
+	 * \param is_active Whether or not the ref should be active
+	 */
 	void set_ref_active(refs_ordered_map::iterator &iter, bool is_active);
 };
 
