@@ -16,21 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "deselectable_list_view.h"
+#ifndef DOCK_WIDGET_TITLE_BAR_H
+#define DOCK_WIDGET_TITLE_BAR_H
 
-deselectable_list_view::deselectable_list_view(QWidget *parent) :
-	QListView(parent)
-{ }
+#include <QDockWidget>
+#include <QLabel>
+#include <QLayout>
+#include <QPushButton>
+#include <QWidget>
 
-void deselectable_list_view::mousePressEvent(QMouseEvent *event)
+class dock_widget_title_bar : public QWidget
 {
-	QPoint pos = event->pos();
-	QPersistentModelIndex index = indexAt(pos);
-	QItemSelectionModel *model = selectionModel();
-	if (index.isValid() && model->isSelected(index)) {
-		model->clearCurrentIndex();
-		model->clearSelection();
-	} else {
-		QListView::mousePressEvent(event);
-	}
-}
+	Q_OBJECT
+public:
+	explicit dock_widget_title_bar(QWidget *parent = nullptr);
+
+public slots:
+	void handle_float_button_click();
+
+private:
+	QDockWidget *dockWidget;
+	QHBoxLayout *layout;
+	QLabel *label;
+	QPushButton *float_button;
+
+};
+
+#endif /* DOCK_WIDGET_TITLE_BAR_H */

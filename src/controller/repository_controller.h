@@ -170,6 +170,7 @@ private:
 	ref_model r_model;
 
 	git::diff diff;
+	git::patch patch;
 	std::vector<const git_diff_delta *> cfile_items;
 	commit_file_model cfile_model;
 

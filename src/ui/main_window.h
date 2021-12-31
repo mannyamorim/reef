@@ -24,6 +24,7 @@
 #include "controller/repository_controller.h"
 
 #include "about_window.h"
+#include "dock_widget_title_bar.h"
 #include "graph_delegate.h"
 
 #include <QMainWindow>
@@ -48,6 +49,7 @@ public slots:
 
 private:
 	Ui::main_window *ui;
+	dock_widget_title_bar *ref_list_title_bar, *file_list_title_bar, *commit_info_title_bar;
 
 	graph_delegate gdelegate;
 	std::unique_ptr<repository_controller> repo_ctrl;

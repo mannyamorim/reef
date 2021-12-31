@@ -36,6 +36,7 @@ repository_controller::repository_controller(std::string &dir, std::function<voi
 	clist_model(*this),
 	r_model(*this),
 	diff(nullptr),
+	patch(nullptr),
 	cfile_model(*this),
 	update_status_func(update_status_func)
 {}
@@ -206,9 +207,23 @@ void repository_controller::handle_commit_table_row_changed(const QModelIndex &c
 
 void repository_controller::handle_file_list_row_changed(const QModelIndex &current, const QModelIndex &previous)
 {
+	(void) previous;
 	if (current.isValid()) {
+		int idx = current.row();
+		patch = diff.get_patch(idx);
+
+		QString text;
+		for (size_t i = 0; i < patch.num_hunks(); i++) {
+			const git_diff_hunk *hunk = patch.get_hunk(i);
+			text = text.append(hunk->header);
+			for (int j = 0; j < patch.num_lines_in_hunk(i); j++) {
+				const git_diff_line *line = patch.get_line_in_hunk(i, j);
+				text = text.append(QString::fromUtf8(line->content, line->content_len));
+			}
+		}
+
+		diff_view_text_changed(text);
 		diff_view_visible(true);
-		diff_view_text_changed(QString(current.row()));
 	} else {
 		diff_view_visible(false);
 	}

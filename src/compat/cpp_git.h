@@ -92,6 +92,77 @@ namespace git
 		}
 	};
 
+	class patch
+	{
+	public:
+		patch(git_patch *ptr) : ptr(ptr) {}
+
+		patch(const patch &) = delete;
+		patch &operator=(const patch &) = delete;
+
+		patch(patch &&other) noexcept
+		{
+			ptr = other.ptr;
+			other.ptr = nullptr;
+		}
+
+		patch &operator=(patch &&other) noexcept
+		{
+			if (this != &other) {
+				if (ptr != nullptr)
+					git_patch_free(ptr);
+
+				ptr = other.ptr;
+				other.ptr = nullptr;
+			}
+
+			return *this;
+		}
+
+		~patch()
+		{
+			git_patch_free(ptr);
+		}
+
+		size_t num_hunks()
+		{
+			return git_patch_num_hunks(ptr);
+		}
+
+		int num_lines_in_hunk(size_t idx)
+		{
+			return git_patch_num_lines_in_hunk(ptr, idx);
+		}
+
+		const git_diff_hunk *get_hunk(size_t idx)
+		{
+			const git_diff_hunk *hunk;
+			int err = git_patch_get_hunk(&hunk, nullptr, ptr, idx);
+			if (err != 0)
+				throw libgit_error(err);
+
+			return hunk;
+		}
+
+		const git_diff_line *get_line_in_hunk(size_t hunk_idx, size_t line_idx)
+		{
+			const git_diff_line *line;
+			int err = git_patch_get_line_in_hunk(&line, ptr, hunk_idx, line_idx);
+			if (err != 0)
+				throw libgit_error(err);
+
+			return line;
+		}
+
+		git_patch *_ptr() const
+		{
+			return ptr;
+		}
+
+	private:
+		git_patch *ptr;
+	};
+
 	class diff
 	{
 	public:
@@ -202,6 +273,16 @@ namespace git
 			int err = git_diff_foreach(ptr, _file_cb, _binary_cb, _hunk_cb, _line_cb, &_payload);
 			if (err != 0)
 				throw libgit_error(err);
+		}
+
+		patch get_patch(size_t idx)
+		{
+			git_patch *patch_ptr;
+			int err = git_patch_from_diff(&patch_ptr, ptr, idx);
+			if (err != 0)
+				throw libgit_error(err);
+
+			return git::patch(patch_ptr);
 		}
 
 	private:
@@ -505,7 +586,7 @@ namespace git
 		class reference_iterator
 		{
 		public:
-			reference_iterator(git_reference_iterator *ptr) : ptr(ptr), ref(nullptr)
+			reference_iterator(git_reference_iterator *ptr) : ref(nullptr), ptr(ptr)
 			{
 				git_reference *new_ref;
 				int err = git_reference_next(&new_ref, ptr);
@@ -598,7 +679,7 @@ namespace git
 			std::string path(repo_path.ptr);
 
 			git_buf_free(&repo_path);
-			return std::move(path);
+			return path;
 		}
 
 	private:
