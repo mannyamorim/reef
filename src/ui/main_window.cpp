@@ -29,13 +29,13 @@ main_window::main_window(QWidget *parent)
 {
 	ui->setupUi(this);
 
-	ref_list_title_bar = new dock_widget_title_bar(ui->dock_widget_ref_tree);
-	file_list_title_bar = new dock_widget_title_bar(ui->dock_widget_commit_file);
-	commit_info_title_bar = new dock_widget_title_bar(ui->dock_widget_commit_info);
+	ref_list_title_bar = std::make_unique<dock_widget_title_bar>(ui->dock_widget_ref_tree);
+	file_list_title_bar = std::make_unique<dock_widget_title_bar>(ui->dock_widget_commit_file);
+	commit_info_title_bar = std::make_unique<dock_widget_title_bar>(ui->dock_widget_commit_info);
 
-	ui->dock_widget_ref_tree->setTitleBarWidget(ref_list_title_bar);
-	ui->dock_widget_commit_file->setTitleBarWidget(file_list_title_bar);
-	ui->dock_widget_commit_info->setTitleBarWidget(commit_info_title_bar);
+	ui->dock_widget_ref_tree->setTitleBarWidget(ref_list_title_bar.get());
+	ui->dock_widget_commit_file->setTitleBarWidget(file_list_title_bar.get());
+	ui->dock_widget_commit_info->setTitleBarWidget(commit_info_title_bar.get());
 
 	connect(ui->action_open_repository, &QAction::triggered, this, &main_window::handle_open_repository);
 	connect(ui->action_close_repository, &QAction::triggered, this, &main_window::handle_close_repository);

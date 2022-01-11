@@ -49,7 +49,7 @@ public slots:
 
 private:
 	Ui::main_window *ui;
-	dock_widget_title_bar *ref_list_title_bar, *file_list_title_bar, *commit_info_title_bar;
+	std::unique_ptr<dock_widget_title_bar> ref_list_title_bar, file_list_title_bar, commit_info_title_bar;
 
 	graph_delegate gdelegate;
 	std::unique_ptr<repository_controller> repo_ctrl;
